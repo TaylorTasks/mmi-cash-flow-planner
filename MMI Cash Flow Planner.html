@@ -1,0 +1,3769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MMI Cash Position Review</title>
+<style>
+/* ===== DESIGN SYSTEM ===== */
+:root {
+  --navy:        #1a1a2e;
+  --navy-mid:    #16213e;
+  --navy-light:  #0f3460;
+  --accent:      #e94560;
+  --amber:       #f59e0b;
+  --green:       #10b981;
+  --red:         #ef4444;
+  --text:        #1e293b;
+  --text-2:      #64748b;
+  --text-muted:  #94a3b8;
+  --border:      #e2e8f0;
+  --border-2:    #cbd5e1;
+  --bg:          #f1f5f9;
+  --card:        #ffffff;
+  --shadow-sm:   0 1px 3px rgba(0,0,0,0.08);
+  --shadow-md:   0 4px 16px rgba(0,0,0,0.1);
+  --r:           10px;
+  --r-sm:        6px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-size: 14px;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+/* ===== HEADER ===== */
+.hdr {
+  background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 55%, var(--navy-light) 100%);
+  color: #fff;
+}
+.hdr-inner {
+  max-width: 1280px; margin: 0 auto;
+  padding: 22px 28px 18px;
+  display: flex; align-items: flex-end; justify-content: space-between; gap: 20px;
+}
+.hdr-eyebrow {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; opacity: 0.55; margin-bottom: 4px;
+}
+.hdr-h1 { font-size: 21px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; }
+.hdr-sub { font-size: 12px; opacity: 0.6; margin-top: 4px; }
+.hdr-btns { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+
+.btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 7px 13px; border-radius: var(--r-sm);
+  font-size: 12px; font-weight: 500; cursor: pointer;
+  border: none; transition: all 0.14s; text-decoration: none; line-height: 1;
+}
+.btn-ghost {
+  background: rgba(255,255,255,0.12); color: #fff;
+  border: 1px solid rgba(255,255,255,0.22);
+}
+.btn-ghost:hover { background: rgba(255,255,255,0.22); }
+.btn-accent { background: var(--accent); color: #fff; }
+.btn-accent:hover { background: #cc3a53; }
+
+.status-bar {
+  background: rgba(0,0,0,0.22);
+  padding: 7px 28px;
+}
+.status-bar-inner {
+  max-width: 1280px; margin: 0 auto;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.s-chip { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; color: rgba(255,255,255,0.75); }
+.s-dot { width: 7px; height: 7px; border-radius: 50%; background: #6b7280; }
+.s-dot.loading { background: var(--amber); animation: blink 1s infinite; }
+.s-dot.ok      { background: var(--green); }
+.s-dot.err     { background: var(--red); }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.35} }
+
+/* ===== MAIN ===== */
+.main { max-width: 1280px; margin: 0 auto; padding: 24px 28px; }
+
+.sec-label {
+  font-size: 13px; font-weight: 700; letter-spacing: 0.07em;
+  text-transform: uppercase; color: var(--text-muted); margin-bottom: 12px;
+}
+
+/* Compact account summary bar — fixed at top, shown when cards scroll out of view */
+.acct-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  background: var(--navy-mid);
+  display: none;   /* hidden until cards leave viewport */
+  align-items: stretch;
+  gap: 0;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  flex-wrap: nowrap;
+}
+.acct-bar-item {
+  display: flex; flex-direction: column; justify-content: center;
+  padding: 6px 12px; border-right: 1px solid rgba(255,255,255,0.1);
+  flex: 1; min-width: 0;
+}
+.acct-bar-item:last-child { border-right: none; }
+.acct-bar-name  { font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.7); white-space: nowrap; margin-bottom: 5px; }
+.acct-bar-vals  { display: flex; align-items: flex-start; gap: 14px; flex-wrap: wrap; row-gap: 6px; }
+.acct-bar-metric { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 0; }
+.acct-bar-fieldlbl { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: rgba(255,255,255,0.5); white-space: nowrap; line-height: 1.1; }
+.acct-bar-bal   { font-size: 12.5px; font-weight: 700; color: #fff; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.acct-bar-bal.neg { color: #fca5a5; }
+.acct-bar-avail { font-size: 12.5px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.acct-bar-avail.green { color: #6ee7b7; }
+.acct-bar-avail.amber { color: #fcd34d; }
+.acct-bar-avail.red   { color: #fca5a5; }
+.acct-bar-avail.muted { color: rgba(255,255,255,0.5); }
+
+/* Collapsible groups */
+.grp-chevron {
+  background: none; border: none; cursor: pointer;
+  color: rgba(255,255,255,0.65); font-size: 14px; line-height: 1;
+  padding: 2px 4px; border-radius: 3px; transition: transform 0.2s;
+  margin-left: auto;
+}
+.grp-chevron:hover { color: #fff; }
+.pay-group.collapsed .grp-chevron { transform: rotate(-90deg); }
+.pay-group.collapsed .pay-tbl,
+.pay-group.collapsed .grp-foot  { display: none; }
+
+/* Autopay override row */
+.pay-tbl tr.autopay-row td { background: #f5f3ff; }
+.pay-tbl tr.autopay-row:hover td { background: #ede9fe; }
+.pay-tbl tr.autopay-row.is-skipped td { background: #f1f5f9; opacity: 0.65; }
+
+select.autopay-sel {
+  font-size: 11px; padding: 3px 6px; border-radius: 4px;
+  border: 1px solid #c4b5fd; background: #ede9fe;
+  cursor: pointer; color: #5b21b6; max-width: 160px;
+}
+select.autopay-sel.skip { background: #f1f5f9; border-color: var(--border-2); color: var(--text-2); }
+select.autopay-sel.delay { background: #fffbeb; border-color: #fcd34d; color: #92400e; }
+
+/* Pay On date input */
+input.payon-inp {
+  width: 120px; padding: 4px 6px;
+  border: 1px solid var(--border-2); border-radius: 4px;
+  font-size: 12px; color: var(--text); background: #fff;
+}
+input.payon-inp:focus { outline: none; border-color: var(--navy-light); box-shadow: 0 0 0 2px rgba(15,52,96,0.14); }
+input.payon-inp:placeholder-shown { color: var(--text-muted); }
+
+/* ===== ACCOUNT CARDS ===== */
+.acct-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(238px, 1fr));
+  gap: 14px; margin-bottom: 28px;
+}
+.acct-card {
+  background: var(--card); border-radius: var(--r);
+  border: 1px solid var(--border); box-shadow: var(--shadow-sm);
+  padding: 16px 18px; position: relative; overflow: hidden;
+}
+.acct-card::before {
+  content:''; position: absolute; top:0; left:0; right:0; height:3px;
+}
+.c-5766::before { background: #3b82f6; }
+.c-8827::before { background: #8b5cf6; }
+.c-5292::before { background: #f97316; }
+.c-2285::before { background: #64748b; }
+.c-8442::before { background: #0ea5e9; }
+.c-4910::before { background: #6366f1; }
+.c-4009::before { background: #2563eb; }
+
+.cc-card .ac-bal { font-size: 24px; }
+
+.ac-name { font-size: 11px; font-weight: 600; color: var(--text-2); letter-spacing: 0.04em; margin-bottom: 8px; }
+.ac-bal-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.ac-bal {
+  font-size: 28px; font-weight: 700; letter-spacing: -0.03em;
+  line-height: 1;
+}
+.ac-bal.neg { color: var(--red); }
+.ac-divider { border: none; border-top: 1px solid var(--border); margin-bottom: 8px; }
+
+.ac-rows { display: flex; flex-direction: column; gap: 5px; }
+.ac-row { display: flex; justify-content: space-between; align-items: baseline; font-size: 12px; }
+.ac-row-lbl { color: var(--text-2); }
+.ac-row-val { font-weight: 600; }
+.ac-row-val.red   { color: var(--red); }
+.ac-row-val.green { color: var(--green); }
+.ac-row-val.amber { color: var(--amber); }
+.ac-row-val.muted { color: var(--text-muted); font-weight: 400; }
+
+.ac-row.final { margin-top: 5px; padding-top: 6px; border-top: 1px dashed var(--border-2); }
+.ac-row.final .ac-row-lbl { font-weight: 600; color: var(--text); font-size: 11px; }
+.ac-row.final .ac-row-val { font-size: 13px; }
+
+.ac-autopay-list { margin-top: 7px; font-size: 11px; color: var(--text-muted); line-height: 1.5; }
+
+/* ===== AUTOPAY PANELS (below account cards) ===== */
+.acct-card.has-panel { border-radius: var(--r) var(--r) 0 0; border-bottom: none; }
+.ap-toggle {
+  width: 100%; display: flex; align-items: center; justify-content: space-between;
+  padding: 7px 14px; background: #f1f5f9;
+  border: 1px solid var(--border); border-top: none; border-radius: 0;
+  font-size: 11px; font-weight: 600; color: var(--text-2);
+  cursor: pointer; text-align: left;
+}
+.ap-toggle:hover { background: #e2e8f0; color: var(--text); }
+.ap-chevron { font-size: 11px; transition: transform 0.2s; line-height: 1; }
+.ap-panel.open .ap-chevron { transform: rotate(180deg); }
+.ap-panel:not(.open) .ap-toggle { border-radius: 0 0 var(--r) var(--r); }
+.ap-body {
+  display: none; border: 1px solid var(--border); border-top: none;
+  border-radius: 0 0 var(--r) var(--r); background: #fff; overflow: hidden;
+}
+.ap-panel.open .ap-body { display: block; }
+.ap-item {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  padding: 8px 14px; border-bottom: 1px solid var(--border); font-size: 12px;
+}
+.ap-item:last-child { border-bottom: none; }
+.ap-item-name { font-weight: 600; color: var(--text); }
+.ap-item-sub  { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+.ap-item-right { text-align: right; flex-shrink: 0; margin-left: 8px; }
+.ap-item-amt  { font-weight: 600; color: var(--text); }
+.ap-item-status { font-size: 10px; margin-top: 2px; }
+.ap-item-status.active { color: var(--text-muted); }
+.ap-item-status.skip   { color: var(--amber); font-weight: 600; }
+.ap-item-status.delay  { color: var(--text-2); font-weight: 600; }
+
+/* ===== PAYABLES GROUPS ===== */
+.pay-group {
+  background: var(--card); border-radius: var(--r);
+  border: 1px solid var(--border); box-shadow: var(--shadow-sm);
+  margin-bottom: 14px; overflow: clip;
+}
+.grp-hdr {
+  display: block; background: var(--navy);
+  position: sticky; top: var(--bar-offset, 0px); z-index: 7;
+  cursor: pointer;
+}
+.grp-hdr-main {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 11px 16px 8px;
+}
+.grp-hdr-left { display: flex; align-items: center; gap: 10px; }
+.grp-acct { font-size: 13px; font-weight: 600; color: #fff; }
+.grp-chip {
+  font-size: 11px; padding: 2px 9px; border-radius: 12px;
+  background: rgba(255,255,255,0.14); color: rgba(255,255,255,0.85);
+}
+.grp-chip.approved { background: rgba(16,185,129,0.32); color: #6ee7b7; }
+.grp-thru-chip {
+  font-size: 11px; padding: 2px 9px; border-radius: 12px;
+  background: #fce4ec; color: #1a2e4a;
+  font-weight: 600; letter-spacing: 0.03em; flex-shrink: 0;
+}
+
+/* Group header balance summary row */
+.grp-bal-row {
+  display: flex; flex-direction: row; align-items: flex-start; flex-wrap: nowrap; gap: 0;
+  padding: 0 16px 10px; border-top: 1px solid rgba(255,255,255,0.1);
+  margin-top: 4px;
+}
+.grp-bal-item {
+  display: flex; flex-direction: column; gap: 1px;
+  padding-right: 16px; margin-right: 16px;
+  border-right: 1px solid rgba(255,255,255,0.12);
+  flex-shrink: 0;
+}
+.grp-bal-item:last-child { border-right: none; padding-right: 0; margin-right: 0; }
+.grp-bal-vdiv { width: 1px; align-self: stretch; background: rgba(255,255,255,0.25); margin: 0 18px; flex-shrink: 0; }
+.grp-bal-lbl { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: rgba(255,255,255,0.45); }
+.grp-bal-val { font-size: 13px; font-weight: 700; color: #fff; letter-spacing: -0.01em; }
+.grp-bal-val.neg  { color: #fca5a5; }
+.grp-bal-val.warn { color: #fcd34d; }
+.grp-bal-val.pos  { color: #86efac; }
+.grp-bal-health-item { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1 1 240px; }
+.grp-bal-health-lbl { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: rgba(255,255,255,0.45); }
+.grp-bal-health-row { display: flex; align-items: flex-start; gap: 10px; flex-wrap: wrap; min-width: 0; }
+.grp-bal-health-desc { font-size: 12px; line-height: 1.4; flex: 1 1 200px; min-width: 0; word-break: break-word; overflow-wrap: anywhere; }
+.hdesc-label { font-weight: 600; }
+.hdesc-label.hdesc-red    { color: #fca5a5; }
+.hdesc-label.hdesc-amber  { color: #fcd34d; }
+.hdesc-label.hdesc-green  { color: #6ee7b7; }
+.hdesc-label.hdesc-none   { color: rgba(255,255,255,0.5); }
+.hdesc-detail { color: #fff; }
+.pay-group.collapsed .grp-key-wrap { display: none; }
+
+/* Key / legend — collapsed by default, opens via the "Show legend" button */
+.grp-key-wrap {
+  border-top: 1px solid rgba(255,255,255,0.07);
+  padding: 6px 16px 9px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.grp-key-btn {
+  align-self: flex-start;
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.78);
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 4px;
+  padding: 3px 9px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.14s, border-color 0.14s;
+  display: inline-flex; align-items: center; gap: 5px;
+}
+.grp-key-btn:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.28); }
+.grp-key-btn .chev { font-size: 9px; transition: transform 0.16s; }
+.grp-key-wrap.open .grp-key-btn .chev { transform: rotate(180deg); }
+.grp-key {
+  display: none;
+  font-size: 11px; color: rgba(255,255,255,0.65); letter-spacing: 0.01em;
+  line-height: 1.6;
+  padding-top: 4px;
+}
+.grp-key-wrap.open .grp-key { display: block; }
+.grp-key b { color: rgba(255,255,255,0.9); font-weight: 600; }
+
+table.pay-tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+
+.pay-tbl th {
+  background: #f1f5f9; color: var(--text-2);
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.07em; padding: 7px 10px; text-align: left;
+  border-bottom: 1px solid var(--border-2); white-space: nowrap;
+  position: sticky; z-index: 6;
+  box-shadow: 0 1px 0 var(--border-2);
+  /* top set dynamically by updateGrpHdrH() */
+}
+.pay-tbl td {
+  padding: 8px 10px; border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.pay-tbl tr:last-child td { border-bottom: none; }
+.pay-tbl tr:hover:not(.pay-tbl thead tr) td { background: #f8fafc; }
+.pay-tbl tr.is-approved td { background: #f0fdf4; }
+.pay-tbl tr.is-approved:hover td { background: #dcfce7; }
+
+.vnd-name {
+  font-weight: 600; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 100%;
+}
+.vnd-sub  {
+  font-size: 11px; color: var(--text-muted); margin-top: 1px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 100%;
+}
+table.pay-tbl td:first-child { overflow: hidden; max-width: 0; }
+.vnd-bill {
+  font-size: 11px; color: var(--text-2); margin-top: 3px;
+  padding: 4px 7px; background: #fffbeb;
+  border: 1px solid #fcd34d; border-radius: 4px;
+  display: inline-block; line-height: 1.4;
+  min-width: 140px;
+}
+.vnd-bill-line { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; white-space: nowrap; }
+.vnd-bill-lbl { font-weight: 600; color: #78350f; font-size: 10px; }
+.vnd-bill-val { font-weight: 700; color: #1a2e4a; font-variant-numeric: tabular-nums; font-size: 11px; }
+.vnd-bill-val.bal-zero    { color: #15803d; }
+.vnd-bill-val.bal-due     { color: #b45309; }
+.vnd-bill-val.bal-partial { color: #92400e; font-style: italic; font-weight: 600; font-size: 10px; }
+.vnd-bill-tent {
+  display: block; font-size: 8px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.04em;
+  background: #fef3c7; color: #92400e;
+  border-bottom: 1px solid #fcd34d;
+  padding: 1px 0 2px;
+  margin: -2px 0 3px;
+  text-align: center;
+}
+.vnd-bill-multi-wrap { display: block; margin: -2px 0 3px; }
+.vnd-bill-multi {
+  display: block; width: 100%;
+  font-size: 9px; font-weight: 600;
+  color: #b45309; background: #fff7ed;
+  border: none; border-bottom: 1px dashed #fdba74;
+  padding: 2px 4px 3px;
+  text-align: center;
+  cursor: pointer;
+  font-family: inherit;
+}
+.vnd-bill-multi:hover { background: #ffedd5; }
+.vnd-bill-pick-list {
+  display: none;
+  background: #fff; border: 1px solid #fdba74; border-radius: 4px;
+  margin-top: 3px; padding: 2px;
+  max-height: 240px; overflow: auto;
+}
+.vnd-bill-multi-wrap.open .vnd-bill-pick-list { display: block; }
+.vnd-bill-pick-item {
+  display: block; width: 100%; text-align: left;
+  background: transparent; border: none;
+  padding: 3px 6px; font-size: 10px; line-height: 1.35;
+  color: #1a2e4a; cursor: pointer;
+  border-radius: 3px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.vnd-bill-pick-item:hover { background: #fff7ed; color: #92400e; }
+.vnd-bill-pick-item.selected { background: #fed7aa; color: #7c2d12; font-weight: 700; }
+
+.badge {
+  display: inline-flex; align-items: center;
+  padding: 1px 6px; border-radius: 10px;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+}
+.badge-od  { background: #fef2f2; color: #b91c1c; }
+.badge-rec { background: #e0f2fe; color: #0369a1; }
+
+.dd { font-size: 12px; line-height: 1.35; }
+.dd.od   { color: var(--red); font-weight: 600; }
+.dd.soon { color: var(--amber); font-weight: 600; }
+.dd.verify { color: #92400e; font-weight: 600; }
+.dd-sub { font-size: 10px; margin-top: 2px; line-height: 1.35; word-break: break-word; overflow-wrap: anywhere; }
+.dd-sub.cleared { color: var(--green); }
+.dd-sub.verify-detail { color: #92400e; }
+.verify-badge {
+  display: inline-block; font-size: 9px; font-weight: 700;
+  letter-spacing: 0.03em; color: #92400e; background: #fef3c7;
+  border: 1px solid #fcd34d; padding: 1px 6px; border-radius: 3px;
+  margin-left: 4px; vertical-align: middle; white-space: nowrap;
+  cursor: help;
+}
+.verify-badge:hover { background: #fde68a; }
+table.pay-tbl td:nth-child(2) { width: 13%; vertical-align: top; }
+
+/* "Possible BILL match" inline suggestion — appears under the BILL Status dropdown
+   when an item shows "Not in BILL" but the most recent BILL.com import has a
+   close-name match. Lets Juanita override in one click without leaving the page. */
+.bill-suggest {
+  margin-top: 6px; padding: 6px 8px;
+  background: #fffbeb; border: 1px solid #fcd34d; border-radius: 5px;
+  display: flex; flex-direction: column; gap: 3px;
+  font-size: 11px; line-height: 1.35; color: #78350f;
+  max-width: 220px;
+}
+.bill-suggest.match-weak { background: #fef3c7; border-style: dashed; }
+.bill-suggest-lbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #92400e; }
+.bill-suggest-vendor { font-weight: 600; color: #1a2e4a; word-break: break-word; }
+.bill-suggest-inv { font-size: 10px; color: #4b5563; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.bill-suggest-howto { font-size: 9px; color: #92400e; font-style: italic; }
+.bill-suggest-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.bill-suggest-status {
+  display: inline-block; font-size: 10px; font-weight: 700;
+  padding: 1px 6px; border-radius: 3px;
+}
+.bill-suggest-status.s-paid    { background: #d1fae5; color: #065f46; }
+.bill-suggest-status.s-partial { background: #fed7aa; color: #7c2d12; }
+.bill-suggest-status.s-sched   { background: #dbeafe; color: #1e3a8a; }
+.bill-suggest-status.s-pend    { background: #fef3c7; color: #78350f; }
+.bill-suggest-status.s-hold    { background: #fecaca; color: #7f1d1d; }
+.bill-suggest-status.s-na      { background: #ede9fe; color: #5b21b6; }
+.bill-suggest-status.s-excl    { background: #f1f5f9; color: #475569; }
+.bill-suggest-status.s-none    { background: #f3f4f6; color: #4b5563; }
+.bill-suggest-amt { color: #4b5563; font-size: 10px; }
+.bill-suggest-amt-row { display: flex; flex-direction: column; gap: 1px; margin-top: 2px;
+  padding: 4px 6px; background: rgba(255,255,255,0.55); border-radius: 4px;
+  border: 1px solid rgba(252,211,77,0.4); }
+.bill-suggest-amt-line { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; white-space: nowrap; }
+.bill-suggest-amt-lbl { font-size: 10px; font-weight: 600; color: #78350f; }
+.bill-suggest-amt-val { font-size: 11px; font-weight: 700; color: #1a2e4a; font-variant-numeric: tabular-nums; }
+.bill-suggest-amt-val.balance-zero    { color: #15803d; }
+.bill-suggest-amt-val.balance-due     { color: #b45309; }
+.bill-suggest-amt-val.balance-partial { color: #92400e; font-size: 10px; font-style: italic; }
+.bill-suggest-actions { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 2px; }
+.bill-suggest-apply, .bill-suggest-useamt {
+  cursor: pointer; border: none;
+  font-size: 10px; font-weight: 600;
+  padding: 4px 9px; border-radius: 4px;
+  white-space: nowrap;
+}
+.bill-suggest-apply { background: #1a2e4a; color: #fff; }
+.bill-suggest-apply:hover { background: #0f3460; }
+.bill-suggest-useamt { background: #fff; color: #1a2e4a; border: 1px solid #1a2e4a; }
+.bill-suggest-useamt:hover { background: #f1f5f9; }
+
+/* BILL status select */
+select.bill-sel {
+  font-size: 11px; padding: 3px 6px; border-radius: 4px;
+  border: 1px solid var(--border-2); background: #fff;
+  cursor: pointer; min-width: 136px; width: 136px; color: var(--text);
+}
+select.bill-sel.s-sched { background:#eff6ff; border-color:#93c5fd; color:#1d4ed8; }
+select.bill-sel.s-pend  { background:#fffbeb; border-color:#fcd34d; color:#92400e; }
+select.bill-sel.s-paid  { background:#f0fdf4; border-color:#86efac; color:#166534; }
+select.bill-sel.s-hold  { background:#fef2f2; border-color:#fca5a5; color:#991b1b; }
+select.bill-sel.s-none  { background:#f8fafc; border-color:#cbd5e1; color:#475569; }
+select.bill-sel.s-partial{ background:#fff7ed; border-color:#fdba74; color:#9a3412; }
+select.bill-sel.s-excl  { background:#f1f5f9; border-color:#94a3b8; color:#475569; font-style:italic; }
+select.bill-sel.s-na    { background:#faf5ff; border-color:#d8b4fe; color:#6b21a8; }
+
+/* Row dimming when an AP item is marked Excluded — Not Aging.
+   Stays visible so Juanita can still see it & easily un-exclude,
+   but visually deprioritized so it doesn't pull attention. */
+tr.is-excluded td { opacity: 0.55; }
+tr.is-excluded .vnd-name { text-decoration: line-through; text-decoration-color: rgba(71,85,105,0.5); }
+
+.amt-ref { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+
+input.pay-inp {
+  width: 88px; padding: 4px 7px; border: 1px solid var(--border-2);
+  border-radius: 4px; font-size: 13px; font-weight: 600;
+  text-align: right; color: var(--text); background: #fff;
+}
+input.pay-inp:focus { outline: none; border-color: var(--navy-light); box-shadow: 0 0 0 2px rgba(15,52,96,0.14); }
+input.pay-inp.mod { border-color: var(--amber); background: #fffbeb; color: #92400e; }
+
+select.acct-sel {
+  font-size: 12px; padding: 4px 6px; border-radius: 4px;
+  border: 1px solid var(--border-2); background: #fff;
+  cursor: pointer; max-width: 158px; color: var(--text);
+}
+
+.appr-cell { text-align: center; }
+input.appr-cb { width: 16px; height: 16px; cursor: pointer; accent-color: var(--green); }
+
+input.note-inp, textarea.note-inp {
+  width: 100%; min-width: 110px; padding: 4px 7px;
+  border: 1px solid transparent; border-radius: 4px;
+  font-size: 10px; color: var(--text-2); background: transparent;
+  font-family: inherit;
+}
+textarea.note-inp {
+  resize: vertical; min-height: 36px; line-height: 1.4;
+  word-wrap: break-word; white-space: pre-wrap; overflow-wrap: break-word;
+}
+input.note-inp:hover, textarea.note-inp:hover { border-color: var(--border); background: #fff; }
+input.note-inp:focus, textarea.note-inp:focus { outline: none; border-color: var(--border-2); background: #fff; }
+textarea.autopay-note { border: 1px solid #6b7280 !important; background: transparent; text-align: left; font-size: 10px; line-height: 1.4; word-wrap: break-word; white-space: pre-wrap; overflow-wrap: break-word; resize: vertical; min-height: 36px; }
+textarea.autopay-note:hover { border-color: #94a3b8 !important; background: rgba(255,255,255,0.04); }
+textarea.autopay-note:focus { outline: none; border-color: #cbd5e1 !important; background: rgba(255,255,255,0.06); }
+textarea.autopay-note::placeholder { font-size: 10px; color: var(--text-muted); }
+.note-help {
+  display: flex; align-items: flex-start; gap: 5px;
+  font-size: 10px; color: var(--text-muted); margin-top: 4px; line-height: 1.45;
+}
+.note-help-icon { flex-shrink: 0; line-height: 1.45; }
+.note-help-text { flex: 1; }
+
+/* Editable vendor name in manual rows */
+input.vnd-inp {
+  width: 100%; padding: 3px 5px;
+  border: 1px solid transparent; border-radius: 3px;
+  font-size: 13px; font-weight: 600; color: var(--text); background: transparent;
+}
+input.vnd-inp:hover { border-color: var(--border); background: #fff; }
+input.vnd-inp:focus { outline: none; border-color: var(--border-2); background: #fff; }
+
+input.inv-inp {
+  width: 100%; padding: 2px 5px; margin-top: 2px;
+  border: 1px solid transparent; border-radius: 3px;
+  font-size: 11px; color: var(--text-muted); background: transparent;
+}
+input.inv-inp:hover { border-color: var(--border); background: #fff; }
+input.inv-inp:focus { outline: none; border-color: var(--border-2); background: #fff; }
+
+input.date-inp {
+  width: 128px; padding: 4px 6px;
+  border: 1px solid transparent; border-radius: 3px;
+  font-size: 12px; color: var(--text-2); background: transparent;
+  font-family: inherit;
+}
+input.date-inp:hover { border-color: var(--border); background: #fff; }
+input.date-inp:focus { outline: none; border-color: var(--border-2); background: #fff; }
+input.date-inp[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; opacity: 0.55; }
+input.date-inp[type="date"]:hover::-webkit-calendar-picker-indicator { opacity: 1; }
+
+.btn-del {
+  background: none; border: none; cursor: pointer;
+  color: var(--text-muted); padding: 2px 5px;
+  border-radius: 3px; font-size: 15px; line-height: 1;
+}
+.btn-del:hover { color: var(--red); background: #fef2f2; }
+
+/* Group footer */
+.grp-foot {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 9px 14px; background: #f8fafc; border-top: 1px solid var(--border);
+}
+.btn-add {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 12px; color: var(--text-2); background: none;
+  border: 1px dashed var(--border-2); border-radius: var(--r-sm);
+  padding: 5px 10px; cursor: pointer; transition: all 0.14s;
+}
+.btn-add:hover { color: var(--navy-light); border-color: var(--navy-light); background: #fff; }
+.btn-add-grp { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.btn-add.btn-add-in { color: #15803d; border-color: #86efac; }
+.btn-add.btn-add-in:hover { color: #166534; border-color: #15803d; background: #f0fdf4; }
+.btn-add.btn-add-out { color: #b45309; border-color: #fdba74; }
+.btn-add.btn-add-out:hover { color: #92400e; border-color: #b45309; background: #fff7ed; }
+
+/* Deposit / transfer-in manual rows */
+tr.deposit-row { background: #f0fdf4; }
+tr.deposit-row.is-approved { background: #dcfce7; }
+tr.deposit-row td { border-top: 1px solid #bbf7d0; }
+tr.deposit-row input.pay-inp { color: #15803d; border-color: #86efac; background: #f7fef9; }
+tr.deposit-row input.pay-inp:focus { border-color: #15803d; box-shadow: 0 0 0 2px rgba(21,128,61,0.14); }
+.deposit-badge {
+  display: inline-block; font-size: 9px; font-weight: 700;
+  letter-spacing: 0.04em; color: #15803d; background: #bbf7d0;
+  padding: 1px 6px; border-radius: 3px; margin-right: 5px; vertical-align: middle;
+}
+
+/* Transfer-out manual rows */
+tr.transferout-row { background: #fff7ed; }
+tr.transferout-row.is-approved { background: #fed7aa; }
+tr.transferout-row td { border-top: 1px solid #fdba74; }
+tr.transferout-row input.pay-inp { color: #b45309; border-color: #fdba74; background: #fffaf3; }
+tr.transferout-row input.pay-inp:focus { border-color: #b45309; box-shadow: 0 0 0 2px rgba(180,83,9,0.14); }
+.transferout-badge {
+  display: inline-block; font-size: 9px; font-weight: 700;
+  letter-spacing: 0.04em; color: #b45309; background: #fed7aa;
+  padding: 1px 6px; border-radius: 3px; margin-right: 5px; vertical-align: middle;
+}
+
+/* Row-type selector on manual rows (Payable / Transfer In / Transfer Out) */
+select.kind-sel {
+  display: block; margin-bottom: 3px;
+  font-size: 9px; font-weight: 700; letter-spacing: 0.04em;
+  padding: 1px 4px; border-radius: 3px;
+  border: 1px solid var(--border-2); cursor: pointer;
+  max-width: 130px;
+}
+select.kind-sel.kind-sel-pay { background:#f8fafc; color:#475569; border-color:#cbd5e1; }
+select.kind-sel.kind-sel-in  { background:#bbf7d0; color:#15803d; border-color:#86efac; }
+select.kind-sel.kind-sel-out { background:#fed7aa; color:#b45309; border-color:#fdba74; }
+.deposit-dash { font-size: 12px; color: var(--text-muted); padding: 0 6px; }
+.amt.deposit-amt { color: #15803d; }
+
+/* New-row flash highlight (applied briefly after Add Payable / Add Deposit) */
+@keyframes rowFlash {
+  0%   { background-color: #fef9c3; box-shadow: inset 0 0 0 2px #facc15; }
+  100% { background-color: transparent; box-shadow: inset 0 0 0 2px transparent; }
+}
+tr.row-flash { animation: rowFlash 1.5s ease-out 1; }
+tr.row-flash.deposit-row { animation: none; background-color: #fef9c3 !important; transition: background-color 1.4s ease-out; }
+
+.grp-tot { font-size: 13px; font-weight: 600; }
+.grp-tot .lbl { font-weight: 400; color: var(--text-2); margin-right: 5px; }
+.grp-tot .amt { color: var(--green); }
+.grp-tot .amt.zero { color: var(--text-muted); font-weight: 400; }
+
+/* ===== GRAND TOTAL ===== */
+.grand-bar {
+  background: var(--navy); color: #fff; border-radius: var(--r);
+  padding: 16px 22px; display: flex; align-items: center;
+  justify-content: space-between; margin-bottom: 24px;
+}
+.gb-left { display: flex; flex-direction: column; gap: 3px; }
+.gb-lbl { font-size: 12px; opacity: 0.65; }
+.gb-val { font-size: 26px; font-weight: 700; letter-spacing: -0.025em; }
+.gb-breakdown { display: flex; gap: 22px; flex-wrap: wrap; }
+.gb-item { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; }
+.gb-item-lbl { font-size: 10px; opacity: 0.55; }
+.gb-item-val { font-size: 15px; font-weight: 600; }
+
+/* ===== ACTION QUEUE ===== */
+.aq-card {
+  background: var(--card); border-radius: var(--r);
+  border: 1px solid var(--border); box-shadow: var(--shadow-sm);
+  overflow: hidden; margin-bottom: 24px;
+}
+.aq-hdr {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+  padding: 13px 18px; background: var(--navy-mid); color: #fff;
+}
+.aq-title { font-size: 13px; font-weight: 600; }
+.aq-actions { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+.aq-empty { padding: 20px; text-align: center; color: var(--text-muted); font-size: 13px; }
+
+table.aq-tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+.aq-tbl th {
+  background: #f1f5f9; color: var(--text-2);
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.07em; padding: 7px 14px; text-align: left;
+  border-bottom: 1px solid var(--border-2);
+}
+.aq-tbl td { padding: 8px 14px; border-bottom: 1px solid var(--border); }
+.aq-tbl tr:last-child td { border-bottom: none; }
+
+/* ===== LOADING OVERLAY ===== */
+.overlay {
+  position: fixed; inset: 0;
+  background: rgba(26,26,46,0.72);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 999; backdrop-filter: blur(3px);
+}
+.overlay-box {
+  background: #fff; border-radius: var(--r);
+  padding: 28px 36px; text-align: center; box-shadow: var(--shadow-md);
+}
+.spinner {
+  width: 32px; height: 32px; margin: 0 auto 14px;
+  border: 3px solid var(--border); border-top-color: var(--navy-light);
+  border-radius: 50%; animation: spin 0.75s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.overlay-text { font-size: 14px; color: var(--text-2); }
+
+.err-banner {
+  background: #fef2f2; border: 1px solid #fca5a5;
+  color: #991b1b; border-radius: var(--r-sm);
+  padding: 10px 14px; margin-bottom: 16px;
+  font-size: 13px; display: none;
+}
+
+/* ===== ACCOUNT HEALTH BADGE ===== */
+.health-badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 10px; font-weight: 600; padding: 2px 8px;
+  border-radius: 10px; margin-top: 6px; letter-spacing: 0.02em;
+  cursor: default;
+}
+.health-green { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+.health-amber { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+.health-red   { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+.health-none  { background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; }
+.health-legend {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 4px 6px;
+  font-size: 10px; color: var(--text-muted); margin-top: 6px; margin-bottom: 18px;
+  letter-spacing: 0.01em;
+}
+.hl-label { font-weight: 600; color: var(--text-2); margin-right: 2px; white-space: nowrap; }
+.health-badge.hl-ex { font-size: 9px; padding: 1px 6px; margin: 0; pointer-events: none; }
+.hl-desc { color: var(--text-muted); white-space: nowrap; }
+.hl-sep { color: var(--border-2); }
+
+/* ===== CANCELED AUTOPAY ===== */
+select.autopay-sel.canceled { background: #fef2f2; border-color: #fca5a5; color: #991b1b; }
+select.autopay-sel.paid    { background: #f0fdf4; border-color: #86efac; color: #166534; }
+.pay-tbl tr.autopay-row.is-paid td { background: #f7fdf9; opacity: 0.65; }
+.pay-tbl tr.autopay-row.is-canceled td { background: #fef9f9; opacity: 0.6; }
+
+/* ===== FIELD UNLOCK ANIMATION ===== */
+@keyframes fieldUnlock {
+  0%   { box-shadow: 0 0 0 3px rgba(251,191,36,0.55); border-color: #fbbf24; background: #fffbeb; }
+  100% { box-shadow: none; }
+}
+.field-unlocked { animation: fieldUnlock 1.8s ease-out forwards; }
+
+/* Floating Refresh action button — fixed bottom-right, always within reach. */
+.fab-refresh {
+  position: fixed; right: 22px; bottom: 22px;
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 11px 16px;
+  background: var(--navy); color: #fff;
+  border: 1px solid var(--navy-light); border-radius: 999px;
+  font-size: 13px; font-weight: 600; letter-spacing: 0.01em;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(15, 52, 96, 0.28), 0 2px 6px rgba(15, 52, 96, 0.18);
+  z-index: 90;
+  transition: transform 0.14s ease, box-shadow 0.14s ease, background 0.14s ease;
+}
+.fab-refresh:hover {
+  background: var(--navy-light);
+  transform: translateY(-1px);
+  box-shadow: 0 12px 28px rgba(15, 52, 96, 0.32), 0 3px 8px rgba(15, 52, 96, 0.22);
+}
+.fab-refresh:active { transform: translateY(0); }
+.fab-refresh .fab-icon { font-size: 16px; line-height: 1; display: inline-block; }
+.fab-refresh.is-loading { background: #475569; pointer-events: none; opacity: 0.85; }
+.fab-refresh.is-loading .fab-icon { animation: fabSpin 0.9s linear infinite; }
+@keyframes fabSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+/* Sort Diagnostic modal */
+.debug-modal {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.6); z-index: 200;
+  display: none; align-items: center; justify-content: center;
+  padding: 24px;
+}
+.debug-modal.open { display: flex; }
+.debug-modal-content {
+  background: #fff; border-radius: 8px;
+  max-width: 920px; width: 100%;
+  max-height: 88vh; overflow: auto;
+  padding: 18px 22px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.35);
+  position: relative;
+}
+.debug-modal-title { margin: 0 0 8px; font-size: 17px; color: var(--navy); }
+.debug-modal-help  { margin: 0 0 14px; font-size: 12.5px; color: var(--text-2); line-height: 1.45; }
+.debug-modal-body  {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px; line-height: 1.55;
+  background: #f8fafc; border: 1px solid var(--border);
+  border-radius: 5px; padding: 10px 12px;
+  white-space: pre; overflow-x: auto;
+  color: var(--text);
+}
+.debug-modal-close {
+  position: absolute; top: 8px; right: 10px;
+  background: none; border: none;
+  font-size: 24px; line-height: 1;
+  color: var(--text-muted); cursor: pointer; padding: 4px 8px;
+}
+.debug-modal-close:hover { color: var(--text); }
+
+@media print {
+  /* ══ PAGE SETUP ══════════════════════════════════════════════ */
+  @page { size: letter portrait; margin: 0.5in 0.5in 0.6in; }
+  @page :first { margin-top: 0; }   /* header bleeds to top edge on page 1 */
+
+  /* ══ GLOBAL ══════════════════════════════════════════════════ */
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  body { background: #fff !important; font-size: 10px; }
+
+  /* ══ HIDE INTERACTIVE CHROME ═════════════════════════════════ */
+  .hdr-btns, .btn-add, .btn-del, .overlay,
+  .status-bar, .acct-bar, .aq-hdr .btn,
+  #errBanner, .ap-toggle, .fab-refresh { display: none !important; }
+
+  /* ══ HEADER ══════════════════════════════════════════════════ */
+  .hdr { break-after: avoid; }
+  .hdr-inner { padding: 12px 18px 10px; }
+  .hdr-eyebrow { font-size: 9px; opacity: 0.7; }
+  .hdr-h1 { font-size: 16px; }
+  .hdr-sub { font-size: 10px; opacity: 0.6; margin-top: 2px; }
+
+  /* ══ MAIN CONTAINER ══════════════════════════════════════════ */
+  .main { padding: 14px 0 0; }
+
+  /* ══ SECTION LABELS ══════════════════════════════════════════ */
+  .sec-label { font-size: 9px; margin-top: 14px !important; margin-bottom: 8px !important; }
+
+  /* ══ ACCOUNT & CC CARDS — 2-column grid for portrait ═════════ */
+  .acct-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+    margin-bottom: 0 !important;
+  }
+  .acct-card {
+    break-inside: avoid;
+    box-shadow: none !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: var(--r) !important;   /* restore radius — ap-panel is hidden */
+    padding: 12px 14px !important;
+  }
+  .acct-card.has-panel {
+    border-radius: var(--r) !important;   /* undo the flat-bottom for hidden panel */
+    border-bottom: 1px solid #e2e8f0 !important;
+  }
+  .ac-name { font-size: 10px; margin-bottom: 5px; }
+  .ac-bal  { font-size: 22px !important; margin-bottom: 8px; }
+  .ac-row  { font-size: 10px; }
+
+  /* ══ AUTOPAY PANELS — hidden ══════════════════════════════════ */
+  .ap-panel { display: none !important; }
+
+  /* ══ PAGE BREAK: cards on p.1, payables start p.2 ════════════ */
+  #payablesLabel { break-before: page; margin-top: 0 !important; }
+
+  /* ══ PAYABLES GROUPS ══════════════════════════════════════════ */
+  .pay-group {
+    break-inside: auto;
+    box-shadow: none !important;
+    border: 1px solid #cbd5e1 !important;
+    margin-bottom: 16px;
+    overflow: visible !important;
+  }
+  /* Force open collapsed groups */
+  .pay-group.collapsed .pay-tbl { display: table !important; }
+  .pay-group.collapsed .grp-foot { display: flex !important; }
+
+  /* Keep group header with at least the first few rows */
+  .grp-hdr { break-after: avoid; padding: 7px 12px; }
+  .grp-acct { font-size: 11px; }
+  .grp-chip { font-size: 9px; }
+
+  /* ══ PAYABLES TABLE ═══════════════════════════════════════════ */
+  table.pay-tbl { width: 100%; border-collapse: collapse; font-size: 9px; }
+  .pay-tbl thead th { font-size: 8px; padding: 4px 5px; }
+  .pay-tbl tbody td { font-size: 9px; padding: 3px 5px; line-height: 1.3; }
+  tr { break-inside: avoid; }
+
+  /* Render form controls as plain text */
+  .pay-tbl input, .pay-tbl select {
+    border: none !important;
+    background: transparent !important;
+    font-size: 9px !important;
+    padding: 0 !important;
+    width: 100% !important;
+    -webkit-appearance: none; appearance: none;
+  }
+  .pay-tbl select { background-image: none !important; }
+
+  /* Group footer */
+  .grp-foot { padding: 6px 12px; break-inside: avoid; }
+
+  /* ══ GRAND BAR & ACTION QUEUE ════════════════════════════════ */
+  .grand-bar { break-inside: avoid; break-before: avoid; margin-top: 12px; }
+  .aq-card   { break-inside: avoid; margin-top: 12px; }
+  .aq-hdr    { padding-bottom: 6px; margin-bottom: 6px;
+               border-bottom: 1px solid #e2e8f0; }
+
+  /* ══ PRINT FOOTER (date line at bottom) ══════════════════════ */
+  .print-footer { display: flex !important; }
+}
+
+/* shown only during print via JS */
+.print-footer {
+  display: none;
+  position: fixed; bottom: 0; left: 0; right: 0;
+  font-size: 9px; color: #94a3b8;
+  justify-content: space-between;
+  padding: 0 0.5in 0.2in;
+}
+</style>
+</head>
+<body>
+
+<!-- Loading overlay -->
+<div class="overlay" id="overlay">
+  <div class="overlay-box">
+    <div class="spinner"></div>
+    <div class="overlay-text" id="overlayTxt">Connecting to Google Sheets…</div>
+  </div>
+</div>
+
+<!-- Header -->
+<header class="hdr">
+  <div class="hdr-inner">
+    <div>
+      <div class="hdr-eyebrow">Male Mogul Initiative &amp; Enterprises</div>
+      <div class="hdr-h1">Cash Position Review</div>
+      <div class="hdr-sub" id="hdrSub">Loading…</div>
+    </div>
+    <div class="hdr-btns">
+      <a class="btn btn-ghost" href="https://docs.google.com/spreadsheets/d/14rbpDerz12gqaT8p8UGufxxNM6hbj96yh-_PN28lDPw/edit" target="_blank" title="Open source data workbook">📊 Source Data</a>
+      <button class="btn btn-ghost" onclick="importBillCSV()" title="Import BILL.com export CSV to auto-fill payment statuses">⬆ Import BILL</button>
+      <button class="btn btn-ghost" onclick="exportCSV()" title="Export approved items as CSV">⬇ Export Queue</button>
+      <button class="btn btn-ghost" onclick="backupState()" title="Download state as JSON">💾 Save State</button>
+      <button class="btn btn-ghost" onclick="restoreState()" title="Restore from JSON file">↩ Restore</button>
+      <button class="btn btn-ghost" onclick="exportPDF()" title="Export as PDF">🖨 Export PDF</button>
+      <button class="btn btn-ghost" onclick="showSortDebug()" title="Show the exact dates each row is being sorted by">🔍 Sort Diagnostic</button>
+      <button class="btn btn-ghost" onclick="refreshData()">↻ Refresh</button>
+    </div>
+  </div>
+  <div class="status-bar">
+    <div class="status-bar-inner">
+      <div class="s-chip">
+        <div class="s-dot loading" id="sDot"></div>
+        <span id="sTxt">Fetching live data…</span>
+      </div>
+      <div class="s-chip" id="savedChip" style="display:none">✓ Changes auto-saved</div>
+    </div>
+  </div>
+</header>
+
+<main class="main">
+  <div class="err-banner" id="errBanner"></div>
+
+  <!-- Compact bar: appears when account cards scroll out of view -->
+  <div id="acctBar" class="acct-bar"></div>
+
+  <!-- Bank Account Cards -->
+  <div class="sec-label">Bank Accounts — Week of <span id="weekOf"></span></div>
+  <div class="health-legend" id="healthLegend">
+    <span class="hl-label">⚡ Runway badge:</span>
+    <span class="health-badge health-green hl-ex">~8+ wks</span><span class="hl-desc"><span style="color:#065f46;font-weight:600">Healthy</span> — ample runway</span>
+    <span class="hl-sep">·</span>
+    <span class="health-badge health-amber hl-ex">~1–8 wks</span><span class="hl-desc"><span style="color:#92400e;font-weight:600">Watch</span> — runway is limited</span>
+    <span class="hl-sep">·</span>
+    <span class="health-badge health-red hl-ex">Overdrawn</span><span class="hl-desc"><span style="color:#991b1b;font-weight:600">Critical</span> — balance below zero</span>
+    <span class="hl-sep">·</span>
+    <span class="health-badge health-none hl-ex">No data</span><span class="hl-desc">No cleared transactions on file (last 4 wks)</span>
+  </div>
+  <div class="acct-grid" id="acctGrid"></div>
+
+  <!-- Credit Card Tiles -->
+  <div class="sec-label" style="margin-top:8px">Credit Cards</div>
+  <div class="acct-grid" id="ccGrid"></div>
+
+  <!-- Payables Decision Table -->
+  <div class="sec-label" id="payablesLabel" style="margin-top:4px">Payables — Review &amp; Approve</div>
+  <div id="paySection"></div>
+
+  <!-- Grand Total -->
+  <div class="grand-bar" id="grandBar">
+    <div class="gb-left">
+      <div class="gb-lbl">Total Approved for Payment</div>
+      <div class="gb-val" id="gbVal">$0.00</div>
+    </div>
+    <div class="gb-breakdown" id="gbBreak"></div>
+  </div>
+
+  <!-- Action Queue -->
+  <div class="aq-card">
+    <div class="aq-hdr">
+      <div class="aq-title">✓ Approved Cash Activity</div>
+      <div class="aq-actions">
+        <button class="btn btn-ghost" onclick="exportCSV()" title="Download as CSV">↓ CSV</button>
+        <button class="btn btn-ghost" onclick="emailQueue()" title="Send via email">✉ Email</button>
+        <button class="btn btn-ghost" onclick="exportPDF()" title="Print or save as PDF">⎙ Print / PDF</button>
+      </div>
+    </div>
+    <div id="aqBody"><div class="aq-empty">No payments approved yet — check ✓ Pay to build the queue.</div></div>
+  </div>
+</main>
+
+<!-- Floating Refresh button — always within reach so Juanita doesn't have to scroll back up. -->
+<button class="fab-refresh" id="fabRefresh" onclick="refreshData()" title="Pull the latest data from Google Sheets">
+  <span class="fab-icon">↻</span>
+  <span class="fab-label">Refresh</span>
+</button>
+
+<!-- Sort Diagnostic modal — opened from the header button so Juanita can see the
+     exact dates the sort is using without leaving the page. -->
+<div class="debug-modal" id="debugModal" onclick="if(event.target===this) this.classList.remove('open')">
+  <div class="debug-modal-content">
+    <button class="debug-modal-close" onclick="document.getElementById('debugModal').classList.remove('open')" title="Close">×</button>
+    <h3 class="debug-modal-title">Sort Diagnostic</h3>
+    <p class="debug-modal-help">Each row shows the date being used to sort it. If you see an autopay above a payable, compare the <strong>due</strong> column — the row higher in the list should always have an earlier or equal due date.</p>
+    <pre class="debug-modal-body" id="debugModalBody"></pre>
+  </div>
+</div>
+
+<!-- Print footer (visible only via @media print) -->
+<div class="print-footer" id="printFooter">
+  <span>Male Mogul Initiative &amp; Enterprises — Cash Position Review</span>
+  <span id="printFooterDate"></span>
+</div>
+
+<script>
+// ============================================================
+//  CONFIG
+// ============================================================
+const SHEET_ID   = '14rbpDerz12gqaT8p8UGufxxNM6hbj96yh-_PN28lDPw';
+const STORE_KEY  = 'mmi_monday_v2';
+
+const BANK_ACCTS = [
+  { key:'5766', label:'Fifth Third (5766)', css:'c-5766',
+    match:['fifth third','5766'] },
+  { key:'8827', label:'Chase (8827)',        css:'c-8827',
+    match:['chase checking','8827'] },
+  { key:'5292', label:'Providence (5292)',   css:'c-5292',
+    match:['providence','5292'] },
+  { key:'2285', label:'BMO (2285)',          css:'c-2285',
+    match:['bmo','2285'] },
+];
+
+const CC_ACCTS = [
+  { key:'8442', label:'Chase CC (8442)', css:'c-8442', match:['chase cc','8442'] },
+  { key:'4910', label:'Citi CC (4910)',  css:'c-4910', match:['citi','4910'] },
+  { key:'4009', label:'AMEX (4009)',     css:'c-4009', match:['amex','american express','4009'] },
+];
+
+const ALL_ACCTS = [
+  'Fifth Third (5766)',
+  'Chase (8827)',
+  'Providence (5292)',
+  'BMO (2285)',
+  'Chase CC (8442)',
+  'Citi CC (4910)',
+  'AMEX (4009)',
+];
+
+const BILL_OPTS = [
+  { v:'none',    lbl:'Not in BILL',         cls:'s-none'    },
+  { v:'sched',   lbl:'Scheduled',           cls:'s-sched'   },
+  { v:'pend',    lbl:'Pending Appr',        cls:'s-pend'    },
+  { v:'partial', lbl:'Partially Paid',      cls:'s-partial' },
+  { v:'paid',    lbl:'Paid',                cls:'s-paid'    },
+  { v:'hold',    lbl:'On Hold',             cls:'s-hold'    },
+  { v:'excl',    lbl:'Excluded — Not Aging', cls:'s-excl'   },
+  { v:'na',      lbl:'N/A',                 cls:'s-na'      },
+];
+
+// ============================================================
+//  STATE
+// ============================================================
+let STATE = { rows:{}, manual:[], collapsed:{}, autopays:{}, apExpanded:{} };
+// rows:     key → { bill, payAmt, payOn, acct, ok, note }
+// autopays: key → { status:'active'|'skip'|'delay', newDate:'' }
+
+function saveState(){
+  try {
+    localStorage.setItem(STORE_KEY, JSON.stringify(STATE));
+    const c = $('savedChip');
+    c.style.display = '';
+    c.textContent = '✓ Saved ' + new Date().toLocaleTimeString();
+  } catch(e){}
+}
+function loadState(){
+  try {
+    const s = localStorage.getItem(STORE_KEY);
+    if(s) STATE = JSON.parse(s);
+  } catch(e){}
+}
+function backupState(){
+  dl(JSON.stringify(STATE,null,2), 'application/json', `mmi_state_${today()}.json`);
+}
+function restoreState(){
+  const inp = document.createElement('input');
+  inp.type='file'; inp.accept='.json';
+  inp.onchange = e => {
+    const f = e.target.files[0]; if(!f) return;
+    const r = new FileReader();
+    r.onload = ev => {
+      try { STATE = JSON.parse(ev.target.result); saveState(); renderAll(); }
+      catch(err){ alert('Invalid file'); }
+    };
+    r.readAsText(f);
+  };
+  inp.click();
+}
+
+// ============================================================
+//  SHEET DATA
+// ============================================================
+let shAccts = [], shAging = [], shRecur = [], shCleared = [], shHistorical = [];
+// shCleared: [{ date: Date, desc: string, amount: number, account: string }]
+// shHistorical: same shape — consolidated 6-month transaction history from "Historical Transactions" tab
+
+function fetchTab(tab){
+  return new Promise(function(resolve, reject){
+    var cbName = '_gviz_' + tab.replace(/\W+/g,'_') + '_' + Date.now() + '_' + Math.floor(Math.random()*1e6);
+    var script  = document.createElement('script');
+    var settled = false;
+
+    var timer = setTimeout(function(){
+      if(settled) return; settled=true; cleanup();
+      reject(new Error('"'+tab+'" tab timed out after 20s'));
+    }, 20000);
+
+    window[cbName] = function(data){
+      if(settled) return; settled=true; cleanup();
+      if(data && data.status==='error'){
+        var msg = data.errors && data.errors[0] ? data.errors[0].detailed_message : 'gviz error';
+        reject(new Error('"'+tab+'": '+msg));
+      } else {
+        resolve(data);
+      }
+    };
+
+    function cleanup(){
+      clearTimeout(timer);
+      delete window[cbName];
+      if(script.parentNode) script.parentNode.removeChild(script);
+    }
+
+    script.onerror = function(){
+      if(settled) return; settled=true; cleanup();
+      reject(new Error('Could not load "'+tab+'" — network error or access denied'));
+    };
+
+    // Set src BEFORE appending (required for reliable JSONP loading)
+    script.src = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID +
+                 '/gviz/tq?tqx=responseHandler:' + cbName +
+                 '&sheet=' + encodeURIComponent(tab) +
+                 '&headers=0';
+    document.head.appendChild(script);
+  });
+}
+
+function gvizRows(data){
+  const out=[];
+  try {
+    for(const r of data.table.rows||[]){
+      out.push((r.c||[]).map(c=>{
+        if(c==null) return '';
+        // Numeric cells: always use raw value to avoid accounting-format parsing issues
+        // (e.g., Google Sheets may format -272 as "($272.00)" which can misparse)
+        if(typeof c.v==='number') return c.v;
+        // Non-numeric: prefer non-empty formatted string (dates, labels, etc.)
+        if(c.f!=null&&c.f!=='') return c.f;
+        return c.v!=null?c.v:'';
+      }));
+    }
+  } catch(e){}
+  return out;
+}
+
+function parseAccts(rows){
+  return rows.filter(r=>r[0]&&String(r[0]).trim()&&String(r[0]).trim()!=='Account')
+    .map(r=>({ name:trim(r[0]), bal:amt(r[1]), limit:amt(r[2]) }));
+}
+
+function parseAging(rows){
+  let hi=-1;
+  for(let i=0;i<rows.length;i++){
+    if(trim(rows[i][1])==='Entity'&&trim(rows[i][4])==='Vendor'){ hi=i; break; }
+  }
+  if(hi<0) return [];
+  const out=[];
+  for(let i=hi+1;i<rows.length;i++){
+    const c=rows[i];
+    if(!c||c.length<9) continue;
+    if(trim(c[2])!=='Bill') continue;
+    const bal=amt(c[8]); if(bal<=0) continue;
+    out.push({ entity:trim(c[1]), invRef:trim(c[3]), vendor:trim(c[4]),
+               dueDate:trim(c[5]), pastDue:amt(c[6]), amount:amt(c[7]), bal });
+  }
+  return out;
+}
+
+function parseRecur(rows){
+  let hi=-1;
+  for(let i=0;i<rows.length;i++){
+    if(trim(rows[i][0])==='Vendor'&&trim(rows[i][1])==='Entity'){ hi=i; break; }
+  }
+  if(hi<0) return [];
+  const out=[];
+  for(let i=hi+1;i<rows.length;i++){
+    const c=rows[i];
+    if(!c||!trim(c[0])) continue;
+    out.push({
+      vendor:     trim(c[0]),
+      entity:     trim(c[1]),
+      expAmt:     amt(c[2]),
+      nextDue:    trim(c[3]),
+      payFrom:    trim(c[4]),
+      billDay:    trim(c[5]),
+      isAutopay:  String(c[6]??'').trim().toLowerCase()==='true',
+      details:    trim(c[7]),
+      agingBal:   amt(c[8]),
+      invRef:     trim(c[9]),
+      qboDue:     trim(c[10]),
+      sourceRow:  i+1,
+    });
+  }
+  return out;
+}
+
+// Parses "Cleared Transactions" tab
+// Expected columns: A=Date, B=Description/Vendor, C=Amount, D=Account (optional)
+function parseCleared(rows){
+  const out=[];
+  for(const r of rows){
+    if(!r[0]||!r[1]) continue;
+    const d = parseDate(trim(r[0]));
+    if(!d) continue;
+    out.push({ date:d, desc:trim(r[1]).toLowerCase(), amount:amt(r[2]), account:trim(r[3]) });
+  }
+  return out;
+}
+
+// Parses "Historical Transactions" tab — same column structure as Cleared Transactions
+// A=Date, B=Description, C=Amount, D=Account; data starts row 3 (header rows auto-skipped by date parse)
+function parseHistorical(rows){
+  const out=[];
+  for(const r of rows){
+    if(!r[0]||!r[1]) continue;
+    const d = parseDate(trim(r[0]));
+    if(!d) continue;
+    out.push({ date:d, desc:trim(r[1]).toLowerCase(), amount:amt(r[2]), account:trim(r[3]) });
+  }
+  return out;
+}
+
+// Compute the next calendar date for a given billDay (1-31).
+// Days 29-31 resolve to last day of the month.
+// If forceNextMonth=true, or the computed date has already passed, rolls to next month.
+function computeBillDayDate(billDay, forceNextMonth){
+  const day = parseInt(billDay)||1;
+  const now = new Date(); now.setHours(0,0,0,0);
+  // Last day of current / next month
+  const lastThisMo = new Date(now.getFullYear(), now.getMonth()+1, 0);
+  const lastNextMo = new Date(now.getFullYear(), now.getMonth()+2, 0);
+  const thisMonthDue = day >= 29 ? lastThisMo : new Date(now.getFullYear(), now.getMonth(), day);
+  let due;
+  if(forceNextMonth || thisMonthDue < now){
+    due = day >= 29 ? lastNextMo : new Date(now.getFullYear(), now.getMonth()+1, day);
+  } else {
+    due = thisMonthDue;
+  }
+  return (due.getMonth()+1)+'/'+due.getDate()+'/'+due.getFullYear();
+}
+
+// Returns the most recent cleared date this month for the vendor, or null if not cleared
+function autopayCleared(vendor){
+  if(!shCleared.length) return null;
+  const now = new Date();
+  const vLow = vendor.toLowerCase();
+  let best = null;
+  for(const t of shCleared){
+    if(t.date.getFullYear()!==now.getFullYear()) continue;
+    if(t.date.getMonth()!==now.getMonth()) continue;
+    if(!(t.desc.includes(vLow)||vLow.includes(t.desc))) continue;
+    if(!best||t.date>best) best=t.date;
+  }
+  return best;
+}
+
+// Most recent matching CLEARED transaction for a vendor across ANY month.
+// Used to give context to past-due autopays so Juanita can judge whether
+// the due date is wrong or the bill is genuinely aging.
+// Returns { date, amount, account } or null.
+function lastClearedForVendor(vendor){
+  const vLow = String(vendor||'').toLowerCase().trim();
+  if(!vLow) return null;
+  let best = null;
+  const considerPool = (pool, src)=>{
+    for(const t of pool){
+      const desc = String(t.desc||'').toLowerCase();
+      if(!desc) continue;
+      // Match if vendor appears in desc, or any significant word of vendor appears in desc
+      const hit = desc.includes(vLow)
+        || vLow.split(/\s+/).some(w=>w.length>3 && desc.includes(w));
+      if(!hit) continue;
+      if(!best || t.date>best.date) best = { date:t.date, amount:t.amount, account:t.account||'', src };
+    }
+  };
+  if(shHistorical && shHistorical.length) considerPool(shHistorical,'hist');
+  if(shCleared    && shCleared.length)    considerPool(shCleared,'cleared');
+  return best;
+}
+
+// Map a raw bank account string (e.g. "Fifth Third Checking 5766") to the short
+// label used in the planner (e.g. "Fifth Third"). Falls back to the raw string.
+function shortAcctLabel(rawAcct){
+  if(!rawAcct) return '';
+  const a = String(rawAcct).toLowerCase();
+  for(const b of BANK_ACCTS){
+    if(b.match.some(p => a.includes(p))) {
+      // Strip trailing "(####)" from the label for a cleaner inline read
+      return b.label.replace(/\s*\(\d+\)\s*$/,'').trim();
+    }
+  }
+  for(const c of CC_ACCTS){
+    if(c.match.some(p => a.includes(p))) return c.label.replace(/\s*\(\d+\)\s*$/,'').trim();
+  }
+  return String(rawAcct).replace(/\s+\d{4,}\s*$/,'').trim();
+}
+
+// Returns most-recent absolute amount from Historical Transactions for a vendor, or null
+function historicalAmount(vendor){
+  if(!shHistorical.length) return null;
+  const vLow = vendor.toLowerCase().trim();
+  let best = null;
+  for(const t of shHistorical){
+    const dLow = t.desc.toLowerCase();
+    if(!(dLow.includes(vLow) || vLow.split(' ').some(w=>w.length>3&&dLow.includes(w)))) continue;
+    if(!best || t.date > best.date) best = t;
+  }
+  return best ? Math.abs(best.amount) : null;
+}
+
+// Compute account health: weekly spend rate from cleared transactions
+// Returns { weeklyRate, label, cls } or null if no data
+function acctHealthInfo(val, acctLabel) {
+  // Prefer Historical Transactions (6-month window, 26-week divisor) over Cleared Transactions (28-day window, 4-week divisor)
+  const useHistorical = shHistorical.length > 0;
+  const pool = useHistorical ? shHistorical : shCleared;
+  const weekDivisor = useHistorical ? 26 : 4;
+  if (!pool.length || val == null) return { label: 'No cleared data', cls: 'health-none' };
+  const now = new Date();
+  // For cleared-only fallback, apply the same 28-day recency window; historical already spans ~6 months
+  let recent;
+  if (useHistorical) {
+    recent = pool.slice(); // use all available historical rows
+  } else {
+    const cutoff = new Date(now.getTime() - 28 * 24 * 3600 * 1000);
+    recent = pool.filter(t => t.date >= cutoff);
+  }
+  if (!recent.length) return { label: 'No cleared data', cls: 'health-none' };
+  // Filter to account-specific transactions when a label is supplied
+  if (acctLabel) {
+    const acctDef = [...BANK_ACCTS, ...CC_ACCTS].find(a => a.label === acctLabel);
+    if (acctDef) {
+      const filtered = recent.filter(t => {
+        const ta = (t.account || '').toLowerCase();
+        return acctDef.match.some(p => ta.includes(p));
+      });
+      if (!filtered.length) return { label: 'No cleared data', cls: 'health-none' };
+      recent = filtered;
+    }
+  }
+  const totalAmt = recent.reduce((s, t) => s + Math.abs(t.amount), 0);
+  if (totalAmt === 0) return { label: 'No cleared data', cls: 'health-none' };
+  const weeklyRate = totalAmt / weekDivisor;
+  if (val < 0) return { weeklyRate, label: 'Overdrawn', cls: 'health-red' };
+  const weeks = val / weeklyRate;
+  if (weeks < 1)  return { weeklyRate, label: '<1 wk runway', cls: 'health-red' };
+  if (weeks < 2)  return { weeklyRate, label: '~'+Math.round(weeks*10)/10+' wk runway', cls: 'health-amber' };
+  if (weeks < 8)  return { weeklyRate, label: '~'+Math.round(weeks)+' wks runway', cls: 'health-amber' };
+  return { weeklyRate, label: '~'+Math.round(weeks)+' wks runway', cls: 'health-green' };
+}
+
+// Balance summary for a bank account label — used in payables group headers
+function acctSummary(acctLabel) {
+  const acct = BANK_ACCTS.find(a => a.label === acctLabel);
+  if (!acct) return null;
+  const sa = shAccts.find(a => acct.match.some(p => a.name.toLowerCase().includes(p)));
+  if (!sa) return null;
+  const bal = sa.bal;
+  const autos = shRecur.filter(r => {
+    if (!r.isAutopay) return false;
+    return matchAcct(r.payFrom) === acct.label && isAutopayRelevant(r.nextDue || r.qboDue);
+  });
+  const autoTot = autos.reduce((s, r) => {
+    const k = vkey(r.vendor, r.invRef || r.billDay, r.entity);
+    const st = (STATE.autopays || {})[k] || {};
+    if (st.status === 'skip' || st.status === 'delay' || st.status === 'canceled' || st.status === 'paid') return s;
+    return s + (r.agingBal > 0 ? r.agingBal : r.expAmt);
+  }, 0);
+  return { bal, avail: bal - autoTot };
+}
+
+// Returns effective due date: uses raw date if present; falls back to billDay computation.
+// If cleared this month, shifts to next month.
+function effectiveDueDate(r){
+  const raw = r.nextDue||r.qboDue||'';
+  const cleared = autopayCleared(r.vendor);
+  // No raw date — compute from billDay
+  if(!raw){
+    if(r.billDay) return computeBillDayDate(r.billDay, !!cleared);
+    return '';
+  }
+  // Raw date exists and not cleared — use as-is
+  if(!cleared) return raw;
+  // Cleared — shift to next month
+  const d = parseDate(raw);
+  if(d){
+    const next = new Date(d.getFullYear(), d.getMonth()+1, d.getDate());
+    return (next.getMonth()+1)+'/'+next.getDate()+'/'+next.getFullYear();
+  }
+  if(r.billDay) return computeBillDayDate(r.billDay, true);
+  return raw;
+}
+
+async function loadData(){
+  setStatus('loading','Fetching live data from Google Sheets…');
+  setOverlay(true,'Connecting to Google Sheets…');
+  hideErr();
+  var tabErrors = [];
+  try {
+    setOverlay(true,'Loading Account Balances, AP Aging, Recurring Payables, Cleared Transactions, Historical Transactions…');
+    var p1 = fetchTab('Account Balances').catch(function(e){ tabErrors.push(e.message); return null; });
+    var p2 = fetchTab('AP Aging').catch(function(e){ tabErrors.push(e.message); return null; });
+    var p3 = fetchTab('Recurring Payables').catch(function(e){ tabErrors.push(e.message); return null; });
+    // Cleared Transactions tab is optional — silently skip if not yet created
+    var p4 = fetchTab('Cleared Transactions').catch(function(){ return null; });
+    // Historical Transactions tab is optional — 6-month consolidated history; silently skip if not present
+    var p5 = fetchTab('Historical Transactions').catch(function(){ return null; });
+    var results = await Promise.all([p1, p2, p3, p4, p5]);
+    var aD = results[0], gD = results[1], rD = results[2], cD = results[3], hD = results[4];
+
+    if(aD) shAccts      = parseAccts(gvizRows(aD));
+    if(gD) shAging      = parseAging(gvizRows(gD));
+    if(rD) shRecur      = parseRecur(gvizRows(rD));
+    if(cD) shCleared    = parseCleared(gvizRows(cD));    else shCleared    = [];
+    if(hD) shHistorical = parseHistorical(gvizRows(hD)); else shHistorical = [];
+
+    var now = new Date();
+    $('hdrSub').textContent = now.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+    $('weekOf').textContent  = now.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+
+    if(tabErrors.length){
+      setStatus('err','Some data could not load');
+      showErr('Warning — could not load: ' + tabErrors.join('; ') + '. Check that the Google Sheet is set to "Anyone with the link can view."');
+    } else {
+      setStatus('ok','Data refreshed · '+now.toLocaleTimeString());
+      hideErr();
+    }
+
+    loadState();
+    renderAll();
+    setOverlay(false);
+  } catch(err){
+    setStatus('err','Could not load data');
+    showErr('Unexpected error: '+err.message+' — make sure the sheet is shared as "Anyone with the link can view" and you are online.');
+    setOverlay(false);
+  }
+}
+
+function refreshData(){ loadData(); }
+
+// ============================================================
+//  BUILD PAYABLE ITEMS
+// ============================================================
+function buildItems(){
+  const items=[], seen=new Set();
+
+  // AP Aging bills (QBO outstanding)
+  for(const b of shAging){
+    const k=vkey(b.vendor, b.invRef, b.entity);
+    if(seen.has(k)) continue; seen.add(k);
+    const rec = shRecur.find(r=>r.vendor.toLowerCase()===b.vendor.toLowerCase());
+    const defAcct = rec ? (matchAcct(rec.payFrom)||ALL_ACCTS[0]) : ALL_ACCTS[0];
+    items.push({ key:k, vendor:b.vendor, invRef:b.invRef, entity:b.entity,
+                 dueDate:b.dueDate||b.qboDue, amtDue:b.bal,
+                 isAutopay:false, isManual:false, defAcct });
+  }
+
+  // Recurring non-autopay (not already captured in aging)
+  for(const r of shRecur){
+    if(r.isAutopay) continue;            // autopays shown on cards only
+    if(r.expAmt<=0&&r.agingBal<=0) continue;
+    const k=vkey(r.vendor, r.invRef, r.entity);
+    if(seen.has(k)) continue; seen.add(k);
+    const defAcct = matchAcct(r.payFrom)||ALL_ACCTS[0];
+    const eff = r.agingBal>0 ? r.agingBal : r.expAmt;
+    items.push({ key:k, vendor:r.vendor, invRef:r.invRef, entity:r.entity,
+                 dueDate:r.qboDue||r.nextDue, amtDue:eff,
+                 isAutopay:false, isManual:false, defAcct });
+  }
+
+  return items;
+}
+
+function groupItems(items){
+  // groups keyed by account label; maintains BANK_ACCTS order
+  const grps={};
+  for(const a of BANK_ACCTS) grps[a.label]=[];
+  grps['Unassigned']=[];
+
+  for(const item of items){
+    const st = STATE.rows[item.key]||{};
+    const acct = st.acct||item.defAcct;
+    if(grps[acct]!==undefined) grps[acct].push(item);
+    else {
+      const found = Object.keys(grps).find(k=>k!=='Unassigned'&&acct&&acct.toLowerCase().includes(k.split(' ')[0].toLowerCase()));
+      (found ? grps[found] : grps['Unassigned']).push(item);
+    }
+  }
+
+  // Manual rows
+  for(const m of (STATE.manual||[])){
+    const a = m.acct||'Unassigned';
+    if(grps[a]!==undefined) grps[a].push({...m, isManual:true});
+    else grps['Unassigned'].push({...m, isManual:true});
+  }
+
+  return grps;
+}
+
+// ============================================================
+//  RENDER ALL
+// ============================================================
+function renderAll(){
+  renderCards();
+  renderPayables();
+  renderGrand();
+  renderQueue();
+  setupCompactBar();
+  // Defer sticky offset calculation until DOM has painted
+  requestAnimationFrame(updateGrpHdrH);
+}
+
+// ============================================================
+//  ACCOUNT CARDS
+// ============================================================
+function renderCards(){
+  const g=$('acctGrid'); g.innerHTML='';
+  const items = buildItems();
+
+  for(const acct of BANK_ACCTS){
+    const sa = shAccts.find(a=>acct.match.some(p=>a.name.toLowerCase().includes(p)));
+    const bal = sa ? sa.bal : null;
+
+    // Autopays this week for this account (respect skip/delay overrides)
+    const autos = shRecur.filter(r=>{
+      if(!r.isAutopay) return false;
+      return matchAcct(r.payFrom)===acct.label && isAutopayRelevant(r.nextDue||r.qboDue);
+    });
+    const autoTot = autos.reduce((s,r)=>{
+      const k = vkey(r.vendor, r.invRef||r.billDay, r.entity);
+      const st = (STATE.autopays||{})[k]||{};
+      if(st.status==='skip'||st.status==='delay'||st.status==='canceled'||st.status==='paid') return s; // excluded
+      return s+(r.agingBal>0?r.agingBal:r.expAmt);
+    },0);
+    const avail = bal!=null ? bal-autoTot : null;
+
+    // Approved items pointing to this account, split by kind:
+    //   appTot       — regular payables (AP OK TO PAY)
+    //   depTot       — deposits / transfers in
+    //   transOutTot  — transfers out (kept distinct from AP for cash planning)
+    let appTot=0, depTot=0, transOutTot=0;
+    for(const it of items){
+      const st=STATE.rows[it.key]||{};
+      if(!st.ok) continue;
+      const eff = st.acct||it.defAcct;
+      if(eff!==acct.label) continue;
+      appTot += st.payAmt!=null ? st.payAmt : it.amtDue;
+    }
+    for(const m of (STATE.manual||[])){
+      if(!m.ok||m.acct!==acct.label) continue;
+      const v = parseFloat(m.payAmt)||0;
+      if(m.kind==='deposit') depTot += v;
+      else if(m.kind==='transfer_out') transOutTot += v;
+      else appTot += v;
+    }
+
+    const afterApp = avail!=null ? avail - appTot - transOutTot + depTot : null;
+
+    const wrapper = document.createElement('div');
+    const d = document.createElement('div');
+    d.className = `acct-card ${acct.css}${autos.length?' has-panel':''}`;
+    // Only turn red if the actual bank balance from the sheet is negative
+    const balCls = bal!=null&&bal<0 ? 'neg' : '';
+    const health = acctHealthInfo(bal, acct.label);
+    d.innerHTML=`
+      <div class="ac-name">${acct.label}</div>
+      <div class="ac-bal-row">
+        <div class="ac-bal ${balCls}">${bal!=null?money(bal):'No data'}</div>
+        ${health?`<div class="health-badge ${health.cls}" title="Based on cleared transaction activity for this account (last 4 wks)">⚡ ${health.label}</div>`:''}
+      </div>
+      <hr class="ac-divider">
+      <div class="ac-rows">
+        <div class="ac-row">
+          <span class="ac-row-lbl">Autopays this week</span>
+          <span class="ac-row-val ${autoTot>0?'amber':'muted'}">${autoTot>0?'('+money(autoTot)+')':money(0)}</span>
+        </div>
+        <div class="ac-row">
+          <span class="ac-row-lbl">Reported Deposits In</span>
+          <span class="ac-row-val ${depTot>0?'green':'muted'}">${depTot>0?'+'+money(depTot):money(0)}</span>
+        </div>
+        <div class="ac-row">
+          <span class="ac-row-lbl">AP OK TO PAY</span>
+          <span class="ac-row-val ${appTot>0?'red':'muted'}">${appTot>0?'('+money(appTot)+')':money(0)}</span>
+        </div>
+        <div class="ac-row">
+          <span class="ac-row-lbl">Reported Transfers Out</span>
+          <span class="ac-row-val ${transOutTot>0?'amber':'muted'}">${transOutTot>0?'('+money(transOutTot)+')':money(0)}</span>
+        </div>
+        <div class="ac-row final">
+          <span class="ac-row-lbl">After approved activity</span>
+          <span class="ac-row-val ${afterApp==null?'muted':afterApp<0?'red':afterApp<500?'amber':'green'}">${afterApp!=null?money(afterApp):money(0)}</span>
+        </div>
+      </div>`;
+    wrapper.appendChild(d);
+
+    // Autopay expand/collapse panel below card
+    if(autos.length > 0){
+      const pk = acct.key;
+      const isOpen = !!(STATE.apExpanded||{})[pk];
+      const panel = document.createElement('div');
+      panel.className = 'ap-panel'+(isOpen?' open':'');
+      panel.id = 'ap_'+pk;
+      panel.innerHTML = `
+        <button class="ap-toggle" onclick="toggleApPanel('${pk}')">
+          <span>${autos.length} autopay${autos.length!==1?'s':''}</span>
+          <span class="ap-chevron">▾</span>
+        </button>
+        <div class="ap-body">
+          ${autos.map(a=>{
+            const ak = vkey(a.vendor, a.invRef||a.billDay, a.entity);
+            const ast = (STATE.autopays||{})[ak]||{};
+            const effAmt = a.agingBal>0?a.agingBal:a.expAmt;
+            const cleared = autopayCleared(a.vendor);
+            const statusCls = ast.status==='skip'?'skip':ast.status==='delay'?'delay':'active';
+            const statusLbl = ast.status==='skip'?'Skip this week':ast.status==='delay'?'Delay / reschedule':'Active';
+            return `<div class="ap-item">
+              <div>
+                <div class="ap-item-name">${esc(a.vendor)}</div>
+                <div class="ap-item-sub">${cleared?'✓ cleared '+fmtDate(cleared):fmtDate(effectiveDueDate(a))}</div>
+              </div>
+              <div class="ap-item-right">
+                <div class="ap-item-amt">${money(effAmt)}</div>
+                <div class="ap-item-status ${statusCls}">${statusLbl}</div>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>`;
+      wrapper.appendChild(panel);
+    }
+
+    g.appendChild(wrapper);
+  }
+
+  // Health legend is always visible (shows all badge states as a key)
+
+  // ---- Credit Card Tiles ----
+  const cg = $('ccGrid'); if(cg) cg.innerHTML='';
+  if(cg){
+    for(const cc of CC_ACCTS){
+      const sa = shAccts.find(a=>cc.match.some(p=>a.name.toLowerCase().includes(p)));
+      const bal   = sa ? sa.bal   : null;
+      const limit = sa ? sa.limit : null;
+      const avail = (bal!=null&&limit!=null&&limit>0) ? limit-bal : null;
+
+      // Approved items assigned to this CC
+      const items2 = buildItems();
+      let appTot=0;
+      for(const it of items2){
+        const st=STATE.rows[it.key]||{};
+        if(!st.ok) continue;
+        if((st.acct||it.defAcct)!==cc.label) continue;
+        appTot += st.payAmt!=null?st.payAmt:it.amtDue;
+      }
+      for(const m of (STATE.manual||[])){
+        if(!m.ok||m.acct!==cc.label) continue;
+        if(m.kind==='deposit') continue;       // deposits don't apply to CC accounts
+        if(m.kind==='transfer_out') continue;  // transfers out don't apply to CC accounts
+        appTot += parseFloat(m.payAmt)||0;
+      }
+      const afterApp = avail!=null ? avail-appTot : null;
+
+      const balCls = bal!=null&&bal<0?'neg':'';
+      const availCls = avail==null?'muted':avail<0?'red':avail<500?'amber':'green';
+
+      const d=document.createElement('div');
+      d.className=`acct-card cc-card ${cc.css}`;
+      d.innerHTML=`
+        <div class="ac-name">${cc.label}</div>
+        <div class="ac-bal ${balCls}">${bal!=null?money(bal):'No data'}</div>
+        <hr class="ac-divider">
+        <div class="ac-rows">
+          <div class="ac-row">
+            <span class="ac-row-lbl">Credit limit</span>
+            <span class="ac-row-val muted">${limit!=null?money(limit):money(0)}</span>
+          </div>
+          <div class="ac-row">
+            <span class="ac-row-lbl">Available credit</span>
+            <span class="ac-row-val ${avail==null?'muted':availCls}">${avail!=null?money(avail):money(0)}</span>
+          </div>
+          <div class="ac-row">
+            <span class="ac-row-lbl">AP OK TO PAY</span>
+            <span class="ac-row-val ${appTot>0?'red':'muted'}">${appTot>0?'('+money(appTot)+')':money(0)}</span>
+          </div>
+          <div class="ac-row final">
+            <span class="ac-row-lbl">After approved payments</span>
+            <span class="ac-row-val ${afterApp==null?'muted':afterApp<0?'red':afterApp<500?'amber':'green'}">${afterApp!=null?money(afterApp):money(0)}</span>
+          </div>
+        </div>`;
+      cg.appendChild(d);
+    }
+  }
+
+  // Populate compact sticky bar — mirrors the bank-tile labels so totals
+  // stay consistent when Juanita scrolls past the cards.
+  const bar = $('acctBar');
+  if(bar){
+    bar.innerHTML = '';
+    const items2 = buildItems();
+    for(const acct of BANK_ACCTS){
+      const sa = shAccts.find(a=>acct.match.some(p=>a.name.toLowerCase().includes(p)));
+      const bal = sa ? sa.bal : null;
+      const balCls2 = bal!=null&&bal<0 ? 'neg' : '';
+
+      // Match the bank-tile aggregation exactly: appTot (AP), depTot, transOutTot.
+      let appTotBar = 0, depTotBar = 0, transOutBar = 0;
+      for(const it of items2){
+        const st = STATE.rows[it.key]||{};
+        if(!st.ok) continue;
+        const eff = st.acct||it.defAcct;
+        if(eff !== acct.label) continue;
+        appTotBar += st.payAmt!=null ? st.payAmt : it.amtDue;
+      }
+      for(const m of (STATE.manual||[])){
+        if(!m.ok || m.acct !== acct.label) continue;
+        const v = parseFloat(m.payAmt)||0;
+        if(m.kind==='deposit') depTotBar += v;
+        else if(m.kind==='transfer_out') transOutBar += v;
+        else appTotBar += v;
+      }
+      const afterApp = bal!=null ? bal - appTotBar - transOutBar + depTotBar : null;
+      const afterCls = afterApp==null ? '' : afterApp<0 ? 'red' : afterApp<500 ? 'amber' : 'green';
+
+      // Every bank tile renders the same 5 metrics regardless of value so
+      // the compact bar has uniform structure across accounts. Zeros render
+      // as $0.00 in muted color, not omitted.
+      const metrics = [
+        `<div class="acct-bar-metric">
+          <div class="acct-bar-fieldlbl">Balance Today</div>
+          <div class="acct-bar-bal ${balCls2}">${bal!=null?money(bal):money(0)}</div>
+        </div>`,
+        `<div class="acct-bar-metric">
+          <div class="acct-bar-fieldlbl">Deposits In</div>
+          <div class="acct-bar-avail ${depTotBar>0?'green':'muted'}">${depTotBar>0?'+'+money(depTotBar):money(0)}</div>
+        </div>`,
+        `<div class="acct-bar-metric">
+          <div class="acct-bar-fieldlbl">AP OK to Pay</div>
+          <div class="acct-bar-avail ${appTotBar>0?'red':'muted'}">${appTotBar>0?'('+money(appTotBar)+')':money(0)}</div>
+        </div>`,
+        `<div class="acct-bar-metric">
+          <div class="acct-bar-fieldlbl">Transfers Out</div>
+          <div class="acct-bar-avail ${transOutBar>0?'amber':'muted'}">${transOutBar>0?'('+money(transOutBar)+')':money(0)}</div>
+        </div>`,
+        `<div class="acct-bar-metric">
+          <div class="acct-bar-fieldlbl">After Activity</div>
+          <div class="acct-bar-avail ${afterApp==null?'muted':afterCls}">${afterApp!=null?money(afterApp):money(0)}</div>
+        </div>`,
+      ];
+      const item = document.createElement('div');
+      item.className = 'acct-bar-item';
+      item.innerHTML =
+        `<div class="acct-bar-name">${acct.label}</div>`+
+        `<div class="acct-bar-vals">${metrics.join('')}</div>`;
+      bar.appendChild(item);
+    }
+  }
+}
+
+// ============================================================
+//  PAYABLES TABLE
+// ============================================================
+// Renders the inner HTML for a section's per-account balance row.
+// Shared by renderPayables (initial render) and saveAndUpdate (lightweight refresh on tick).
+function sectionBalRowInnerHTML(o){
+  const { summary, activeAutoTot, thisWeekApproved, thisWeekDepositsIn, thisWeekTransOut,
+          totalOutflow, balAfter, health, alertLabel, alertDetail, alertLabelCls } = o;
+  const transOut = thisWeekTransOut || 0;
+  return `
+    <div class="grp-bal-item">
+      <div class="grp-bal-lbl">Balance Today</div>
+      <div class="grp-bal-val ${summary.bal<0?'neg':''}">${money(summary.bal)}</div>
+    </div>
+    <div class="grp-bal-item">
+      <div class="grp-bal-lbl">Active Autopayments</div>
+      <div class="grp-bal-val ${activeAutoTot>0?'warn':''}">${money(activeAutoTot)}</div>
+    </div>
+    <div class="grp-bal-item">
+      <div class="grp-bal-lbl">AP OK TO PAY</div>
+      <div class="grp-bal-val ${thisWeekApproved>0?'warn':''}">${money(thisWeekApproved)}</div>
+    </div>
+    <div class="grp-bal-item">
+      <div class="grp-bal-lbl">Reported Deposits In</div>
+      <div class="grp-bal-val ${thisWeekDepositsIn>0?'pos':''}">${thisWeekDepositsIn>0?'+'+money(thisWeekDepositsIn):money(0)}</div>
+    </div>
+    <div class="grp-bal-item">
+      <div class="grp-bal-lbl">Reported Transfers Out</div>
+      <div class="grp-bal-val ${transOut>0?'warn':''}">${money(transOut)}</div>
+    </div>
+    <div class="grp-bal-item">
+      <div class="grp-bal-lbl">Total Outflow</div>
+      <div class="grp-bal-val ${totalOutflow>0&&balAfter<0?'neg':totalOutflow>0?'warn':''}">${money(totalOutflow)}</div>
+    </div>
+    <div class="grp-bal-item">
+      <div class="grp-bal-lbl">Balance After Activity</div>
+      <div class="grp-bal-val ${balAfter<0?'neg':''}">${money(balAfter)}</div>
+    </div>
+    ${health?`
+    <div class="grp-bal-health-item">
+      <div class="grp-bal-health-lbl">Account Health</div>
+      <div class="grp-bal-health-row">
+        <div class="health-badge ${health.cls}" style="margin:0;flex-shrink:0">⚡ ${health.label}</div>
+        <div class="grp-bal-health-desc">
+          <span class="hdesc-label ${alertLabelCls}">${alertLabel}</span><span class="hdesc-detail">: ${alertDetail}</span>
+        </div>
+      </div>
+    </div>`:''}`;
+}
+
+function renderPayables(){
+  const sec=$('paySection'); sec.innerHTML='';
+  const items = buildItems();
+  const grps  = groupItems(items);
+
+  for(const [lbl,rows] of Object.entries(grps)){
+    const isBankAcct = BANK_ACCTS.some(a=>a.label===lbl);
+    if(!isBankAcct && rows.length===0) continue;
+    if(lbl==='Unassigned'&&rows.length===0) continue;
+
+    let appTot=0, depTotSec=0, transOutSec=0;
+    for(const it of rows){
+      if(it.isManual){
+        if(it.ok){
+          const v=parseFloat(it.payAmt)||0;
+          if(it.kind==='deposit') depTotSec+=v;
+          else if(it.kind==='transfer_out') transOutSec+=v;
+          else appTot+=v;
+        }
+      } else {
+        const st=STATE.rows[it.key]||{};
+        if(st.ok) appTot += st.payAmt!=null?st.payAmt:it.amtDue;
+      }
+    }
+
+    const gid = 'grp_'+lbl.replace(/\W/g,'_');
+
+    // Autopay rows for this account group
+    const autopayRows = shRecur.filter(r=>
+      r.isAutopay && matchAcct(r.payFrom)===lbl && isAutopayRelevant(r.nextDue||r.qboDue)
+    );
+
+    // Aging through date: furthest due date across all items in this group
+    let agingThruDate = null;
+    for(const r of autopayRows){
+      const d=parseDate(r.nextDue||r.qboDue);
+      if(d&&(!agingThruDate||d>agingThruDate)) agingThruDate=d;
+    }
+    for(const it of rows){
+      const d=parseDate(it.dueDate);
+      if(d&&(!agingThruDate||d>agingThruDate)) agingThruDate=d;
+    }
+    const agingThruStr = agingThruDate
+      ? (()=>{ const mm=String(agingThruDate.getMonth()+1).padStart(2,'0'),
+                     dy=String(agingThruDate.getDate()).padStart(2,'0'),
+                     yy=String(agingThruDate.getFullYear()).slice(-2);
+               return ` Thru ${mm}/${dy}/${yy}`; })()
+      : '';
+    const excludedCount = rows.filter(r => {
+      const b = r.isManual ? r.bill : ((STATE.rows[r.key]||{}).bill||'none');
+      return b === 'excl';
+    }).length;
+    const totalItemCount = autopayRows.length + rows.length - excludedCount;
+    // Aging badge: always neutral, always the full item count — never affected by UI state
+    const chipCls = 'grp-chip';
+    const chipTxt = totalItemCount+' Outflow Item'+(totalItemCount!==1?'s':'')+' Aging'+agingThruStr;
+
+    // Active autopays total (status=active or unset)
+    const activeAutoTot = autopayRows.reduce((s,r)=>{
+      const k=vkey(r.vendor,r.invRef||r.billDay,r.entity);
+      const ast=((STATE.autopays||{})[k]||{}).status||'active';
+      if(ast!=='active') return s;
+      return s+(r.agingBal>0?r.agingBal:r.expAmt);
+    },0);
+    // Approved payables this week (pay amt > 0 AND pay-on date falls in current Mon-Sun)
+    let thisWeekApproved=0, thisWeekDepositsIn=0, thisWeekTransOut=0;
+    for(const it of rows){
+      if(it.isManual){
+        if(it.ok){
+          const pa=parseFloat(it.payAmt)||0;
+          const dateRef = it.payOn || it.dueDate || '';
+          if(it.kind==='deposit'){
+            if(pa>0 && isThisWeek(dateRef)) thisWeekDepositsIn+=pa;
+          } else if(it.kind==='transfer_out'){
+            if(pa>0 && isThisWeek(dateRef)) thisWeekTransOut+=pa;
+          } else {
+            if(pa>0 && isThisWeek(it.payOn||'')) thisWeekApproved+=pa;
+          }
+        }
+      } else {
+        const st2=STATE.rows[it.key]||{};
+        if(st2.ok){ const pa=st2.payAmt!=null?st2.payAmt:it.amtDue; if(pa>0&&isThisWeek(st2.payOn||'')) thisWeekApproved+=pa; }
+      }
+    }
+    const totalOutflow = activeAutoTot + thisWeekApproved + thisWeekTransOut;
+
+    // projThruDate: end of the current Sun–Sat week = Saturday (stable, never shifts with UI state)
+    const projThruDate = (()=>{
+      const now=new Date(); now.setHours(0,0,0,0);
+      const sun=new Date(now); sun.setDate(now.getDate()-now.getDay()); // Sunday start
+      const sat=new Date(sun); sat.setDate(sun.getDate()+6); sat.setHours(23,59,59,999);
+      return sat;
+    })();
+
+    // Slated count: active autopays with effective due date ≤ cutoff + approved payables with payOn ≤ cutoff
+    // Uses effectiveDueDate (same as the Due Date column) so already-cleared autopays are excluded
+    let outflowItemCount = 0;
+    for(const r of autopayRows){
+      const k=vkey(r.vendor,r.invRef||r.billDay,r.entity);
+      const ast=((STATE.autopays||{})[k]||{}).status||'active';
+      if(ast!=='active') continue;
+      const d=parseDate(effectiveDueDate(r));
+      if(d && projThruDate && d<=projThruDate) outflowItemCount++;
+    }
+    for(const it of rows){
+      if(it.isManual && it.kind==='deposit') continue; // deposits aren't outflows
+      const st2=STATE.rows[it.key]||{};
+      const approved = it.isManual ? it.ok : st2.ok;
+      if(!approved) continue;
+      const payOnStr = it.isManual ? (it.payOn||'') : (st2.payOn||'');
+      const d = parseDate(payOnStr);
+      if(d && (!projThruDate || d<=projThruDate)) outflowItemCount++;
+    }
+    const thruChipHtml = (projThruDate && outflowItemCount > 0)
+      ? (()=>{
+          const dd=projThruDate;
+          const days=['Sun.','Mon.','Tue.','Wed.','Thu.','Fri.','Sat.'];
+          const mm=String(dd.getMonth()+1).padStart(2,'0');
+          const dy=String(dd.getDate()).padStart(2,'0');
+          const yy=String(dd.getFullYear()).slice(-2);
+          return `<div class="grp-thru-chip">${outflowItemCount} Outflow Item${outflowItemCount!==1?'s':''} Slated to Pay by ${days[dd.getDay()]} ${mm}/${dy}/${yy}</div>`;
+        })()
+      : '';
+
+    const div=document.createElement('div');
+    const isCollapsed = !!(STATE.collapsed||{})[gid];
+    div.className='pay-group'+(isCollapsed?' collapsed':''); div.id=gid;
+    const summary = acctSummary(lbl);
+    const balV = s => s!=null&&s<0?'neg':s!=null&&s<500?'warn':'';
+    const health = summary ? acctHealthInfo(summary.avail, lbl) : null;
+    let alertLabel='', alertDetail='', alertLabelCls='';
+    if(health){
+      if(summary.bal<0){
+        alertLabel='Overdrawn'; alertDetail='deposit or transfer needed before next autopay.'; alertLabelCls='hdesc-red';
+      } else if(health.cls==='health-red'){
+        alertLabel='Critical'; alertDetail='available balance covers less than 1 week of outflows.'; alertLabelCls='hdesc-red';
+      } else if(health.cls==='health-amber'){
+        alertLabel='Watch'; alertDetail='available balance covers limited weeks at current spend rate.'; alertLabelCls='hdesc-amber';
+      } else if(health.cls==='health-green'){
+        alertLabel='Healthy'; alertDetail='runway is adequate at current spend rate.'; alertLabelCls='hdesc-green';
+      } else {
+        alertLabel='No data'; alertDetail='no cleared transaction history on file — runway cannot be calculated.'; alertLabelCls='hdesc-none';
+      }
+    }
+    const balAfter = summary ? summary.bal - totalOutflow + thisWeekDepositsIn : null;
+    div.innerHTML=`
+      <div class="grp-hdr" onclick="toggleGroup('${gid}')">
+        <div class="grp-hdr-main">
+          <div class="grp-hdr-left">
+            <div class="grp-acct">${lbl}</div>
+            ${thruChipHtml}
+            <div class="${chipCls}" id="${gid}_chip">${chipTxt}</div>
+          </div>
+          <button class="grp-chevron" title="Collapse/expand" onclick="event.stopPropagation();toggleGroup('${gid}')">▾</button>
+        </div>
+        ${summary ? `
+        <div class="grp-bal-row" id="${gid}_balrow">
+          ${sectionBalRowInnerHTML({summary, activeAutoTot, thisWeekApproved, thisWeekDepositsIn, thisWeekTransOut, totalOutflow, balAfter, health, alertLabel, alertDetail, alertLabelCls})}
+        </div>
+        ${(()=>{ const keyOpen = !!(STATE.keyOpen||{})[gid]; return `
+        <div class="grp-key-wrap${keyOpen?' open':''}" id="${gid}_keywrap">
+          <button class="grp-key-btn" onclick="event.stopPropagation();toggleGrpKey('${gid}')">
+            <span>💡 ${keyOpen?'Hide':'Show'} legend</span><span class="chev">▾</span>
+          </button>
+          <div class="grp-key">${grpKeyText(rows,autopayRows)}</div>
+        </div>`; })()}` : ''}
+      </div>
+      <table class="pay-tbl">
+        <thead><tr>
+          <th style="width:17%">Vendor / Invoice</th>
+          <th style="width:11%">Due Date</th>
+          <th style="width:13%">BILL Status</th>
+          <th style="width:7%">Amt Due</th>
+          <th style="width:9%">Pay Amt</th>
+          <th style="width:9%">Pay On</th>
+          <th style="width:14%">Account</th>
+          <th style="width:4%;text-align:center">✓ Pay</th>
+          <th>💡 Notes</th>
+          <th style="width:28px"></th>
+        </tr></thead>
+        <tbody id="${gid}_body">
+          ${(()=>{
+            const n=new Date(); n.setHours(0,0,0,0);
+            const sun=new Date(n); sun.setDate(n.getDate()-n.getDay());
+            const cutoff=new Date(sun); cutoff.setDate(sun.getDate()+6); cutoff.setHours(23,59,59,999);
+
+            // All recurring payables assigned to this section
+            const allRecur = shRecur.filter(r=>matchAcct(r.payFrom)===lbl);
+            const nonAutopayRecur = allRecur.filter(r=>!r.isAutopay);
+
+            // Vendor sets for dedup
+            const autopayVendorSet   = new Set(autopayRows.map(r=>r.vendor.toLowerCase().trim()));
+            const nonAutopayVendorSet= new Set(nonAutopayRecur.map(r=>r.vendor.toLowerCase().trim()));
+            const allRecurVendorSet  = new Set([...autopayVendorSet,...nonAutopayVendorSet]);
+
+            // Augment aging rows: fill missing due dates from Recurring Payables (global shRecur search)
+            const agingVendorSet = new Set(rows.map(r=>(r.vendor||'').toLowerCase().trim()));
+            const augmentedRows = rows.map(r=>{
+              // Skip only when dueDate exists AND parseDate can parse it
+              if(r.isManual||(r.dueDate&&parseDate(r.dueDate))) return r;
+              // Exact vendor name match first
+              let rec=shRecur.find(re=>!re.isAutopay&&re.vendor.toLowerCase().trim()===(r.vendor||'').toLowerCase().trim());
+              // Fuzzy fallback: match by any significant word (>3 chars)
+              if(!rec){
+                const words=(r.vendor||'').toLowerCase().split(/\s+/).filter(w=>w.length>3);
+                if(words.length) rec=shRecur.find(re=>{
+                  if(re.isAutopay) return false;
+                  const rv=re.vendor.toLowerCase();
+                  return words.some(w=>rv.includes(w));
+                });
+              }
+              if(!rec) return r;
+              const computed=effectiveDueDate(rec);
+              return computed?{...r,dueDate:computed}:r;
+            });
+
+            // Vendors that now have parseable dates after augmentation
+            const augmentedDateVendors=new Set(
+              augmentedRows.filter(r=>r.dueDate&&parseDate(r.dueDate)).map(r=>(r.vendor||'').toLowerCase().trim())
+            );
+
+            // Synthetic rows: non-autopay recurring vendors not covered by a parseable aging date
+            const syntheticRows = nonAutopayRecur
+              .filter(r=>{
+                const v=r.vendor.toLowerCase().trim();
+                if(augmentedDateVendors.has(v)) return false; // aging row has date — skip
+                const dd=effectiveDueDate(r);
+                return !!dd;
+              })
+              .map(r=>{
+                const base=r.agingBal>0?r.agingBal:r.expAmt;
+                const needsHist=!base||Math.abs(base)<=0.01;
+                const hist=needsHist?historicalAmount(r.vendor):null;
+                return {
+                  ...r,
+                  key: vkey(r.vendor,r.invRef||r.billDay||'recur',r.entity),
+                  isSyntheticRecur: true,
+                  dueDate: effectiveDueDate(r),
+                  amtDue: hist||base||0,
+                  defAcct: lbl,
+                };
+              });
+
+            // Dedup aging: remove rows covered by autopay OR by a synthetic that provides the date
+            const syntheticVendorSet=new Set(syntheticRows.map(r=>r.vendor.toLowerCase().trim()));
+            const dedupedRows = augmentedRows.filter(r=>{
+              if(r.isManual) return true;
+              const v=(r.vendor||'').toLowerCase().trim();
+              if(autopayVendorSet.has(v)) return false;     // autopay row handles this
+              if(syntheticVendorSet.has(v)) return false;   // synthetic provides the date
+              return true;
+            });
+
+            const tagged = [
+              ...autopayRows.map(r=>({...r,_isAutopay:true})),
+              ...syntheticRows.map(r=>({...r,_isSynthetic:true})),
+              ...dedupedRows,
+            ];
+
+            // Precompute a sort-key tuple per row, then sort using a
+            // simple lexicographic comparator. This avoids subtle bugs from
+            // multi-step inline comparators returning the wrong sign.
+            //   key = [bucket, dueTime, payOnTime, vendorLower]
+            //     bucket: 0 = deposit (top), 1 = normal, 2 = bottom
+            //     dueTime / payOnTime: ms since epoch; empty → Number.MAX_SAFE_INTEGER
+            const FAR = Number.MAX_SAFE_INTEGER;
+            for(const r of tagged){
+              const isDep = r.isManual && r.kind === 'deposit';
+              const isAuto = !!r._isAutopay;
+              let bottom = false;
+              if(isAuto){
+                const ak = vkey(r.vendor, r.invRef||r.billDay, r.entity);
+                const ast = ((STATE.autopays||{})[ak]||{}).status || 'active';
+                bottom = ast === 'canceled' || ast === 'paid';
+              } else {
+                const xBill = r.isManual ? r.bill : ((STATE.rows[r.key]||{}).bill || 'none');
+                bottom = xBill === 'na' || xBill === 'excl';
+              }
+              const bucket = isDep ? 0 : bottom ? 2 : 1;
+              const dueRaw = isAuto ? effectiveDueDate(r) : (r.dueDate || '');
+              const dueParsed = parseDate(dueRaw);
+              const dueTime = dueParsed ? dueParsed.getTime() : FAR;
+              const payOnRaw = r.isManual ? (r.payOn||'') : ((STATE.rows[r.key]||{}).payOn || '');
+              const payOnParsed = parseDate(payOnRaw);
+              const payOnTime = payOnParsed ? payOnParsed.getTime() : FAR;
+              r._sortKey = [bucket, dueTime, payOnTime, String(r.vendor||'').toLowerCase()];
+            }
+            tagged.sort((a,b)=>{
+              const ka = a._sortKey, kb = b._sortKey;
+              if(ka[0] !== kb[0]) return ka[0] - kb[0];
+              if(ka[1] !== kb[1]) return ka[1] - kb[1];
+              if(ka[2] !== kb[2]) return ka[2] - kb[2];
+              return ka[3] < kb[3] ? -1 : ka[3] > kb[3] ? 1 : 0;
+            });
+
+            return tagged.map(r=>
+              r._isAutopay ? autopayRowHTML(r) : rowHTML(r,lbl)
+            ).join('');
+          })()}
+        </tbody>
+      </table>
+      <div class="grp-foot">
+        <div class="btn-add-grp">
+          <button class="btn-add" onclick="event.stopPropagation();addManual('${lbl}','payable')">+ Add payable</button>
+          <button class="btn-add btn-add-in" onclick="event.stopPropagation();addDeposit('${lbl}')" title="Add a deposit, refund, or transfer in to this account">+ Add deposit / transfer in</button>
+          <button class="btn-add btn-add-out" onclick="event.stopPropagation();addTransferOut('${lbl}')" title="Add a transfer OUT of this account — kept separate from regular AP">+ Add transfer out</button>
+        </div>
+        <div class="grp-tot" id="${gid}_tot">
+          <span class="lbl">AP OK to pay:</span>
+          <span class="amt ${appTot===0?'zero':''}">${money(appTot)}</span>
+          ${depTotSec>0?`<span class="lbl" style="margin-left:14px">Deposits in:</span><span class="amt deposit-amt">+${money(depTotSec)}</span>`:''}
+          ${transOutSec>0?`<span class="lbl" style="margin-left:14px">Transfers out:</span><span class="amt" style="color:#b45309">${money(transOutSec)}</span>`:''}
+        </div>
+      </div>`;
+    sec.appendChild(div);
+  }
+}
+
+function rowHTML(item, grpAcct){
+  if(item.isManual) return manualRowHTML(item);
+
+  const st  = STATE.rows[item.key]||{};
+  const bill= st.bill||'none';
+  const payA= st.payAmt!=null?st.payAmt:item.amtDue;
+  const payOn = st.payOn||'';
+  const acct= st.acct||item.defAcct;
+  const ok  = !!st.ok;
+  const note= st.note||'';
+  const mod = st.payAmt!=null && Math.abs(st.payAmt-item.amtDue)>0.005;
+  const ddCls = isOverdue(item.dueDate)?'od':isDueSoon(item.dueDate)?'soon':'';
+  const rowCls = (ok?'is-approved':'') + (bill==='excl'?' is-excluded':'');
+  const billCls = BILL_OPTS.find(o=>o.v===bill)?.cls||'';
+
+  const billOpts = BILL_OPTS.map(o=>`<option value="${o.v}"${o.v===bill?' selected':''}>${o.lbl}</option>`).join('');
+  const acctOpts = ALL_ACCTS.map(a=>`<option${a===acct?' selected':''}>${esc(a)}</option>`).join('');
+
+  const od  = isOverdue(item.dueDate);
+
+  // Past-due signal for regular payables. We show two pieces of information
+  // independently:
+  //   - showPastDueInfo: the small "X past due · last cleared ..." subtext.
+  //     Renders whenever the row is past due AND not already paid/excluded
+  //     — i.e. even if Juanita has already approved (ok) it for payment,
+  //     because the cadence context still helps.
+  //   - unverifiedPastDue: the amber "⚠ Verify" badge. Only renders when
+  //     past due AND not yet approved AND status is actionable.
+  const today_=(()=>{ const d=new Date(); d.setHours(0,0,0,0); return d; })();
+  const dueParsed = parseDate(item.dueDate);
+  const isPastDue = !!(dueParsed && dueParsed < today_);
+  const daysPast  = isPastDue ? Math.round((today_-dueParsed)/86400000) : 0;
+  const showPastDueInfo  = isPastDue && bill!=='paid' && bill!=='excl';
+  const unverifiedPastDue= showPastDueInfo && !ok && bill!=='na';
+  const lastCleared = showPastDueInfo ? lastClearedForVendor(item.vendor) : null;
+  const lastClearedAcct = lastCleared ? shortAcctLabel(lastCleared.account) : '';
+  const verifyTip = unverifiedPastDue
+    ? `Due date is ${daysPast} day${daysPast===1?'':'s'} in the past and this row is not yet approved for payment.\n\n`
+      + (lastCleared
+          ? `Last cleared ${fmtDate(lastCleared.date)} for ${money(Math.abs(lastCleared.amount))}${lastClearedAcct?' from '+lastClearedAcct:''}. If that matches this bill, mark BILL Status as Paid. Otherwise, treat it as aging and queue payment.`
+          : `No prior clearing transactions found for this vendor. The bill is most likely genuinely aging — confirm in BILL.com and queue payment, or follow up with the vendor.`)
+    : '';
+
+  const recurBadge = item.isSyntheticRecur
+    ? `<a class="badge" href="https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit#gid=1899593559&range=A${item.sourceRow||1}" target="_blank" title="Open in Recurring Payables" style="background:#d1fae5;color:#065f46;margin-right:4px;text-decoration:none;cursor:pointer">Recurring ↗</a>`
+    : '';
+
+  // Compute BILL Total + Balance line for the Vendor column.
+  // Sources (in priority order):
+  //   1) Confirmed billEntry snapshot from import or a prior Apply click
+  //   2) Fresh fuzzy lookup against the imported BILL data
+  // A row is TENTATIVE whenever it hasn't been confirmed yet — i.e. the
+  // dropdown still says "Not in BILL". That covers two cases: a fuzzy
+  // suggestion the matcher just found, AND an import-time snapshot whose
+  // BILL status was blank/unrecognized (mapped to 'none').
+  const billEntrySnap = (st.billEntry && (st.billEntry.amount!=null || st.billEntry.invRef)) ? st.billEntry : null;
+  // Always call findBillSuggestion so we can surface allCandidates even on
+  // confirmed-match rows (the snapshot itself doesn't carry candidates).
+  const lookupSuggest = findBillSuggestion(item);
+  const billRef = billEntrySnap || lookupSuggest;
+  const billRefIsTentative = bill === 'none' && billRef;
+  // Candidates come from the fresh lookup regardless of which source filled billRef.
+  const allCandidates = (lookupSuggest && lookupSuggest.allCandidates) ? lookupSuggest.allCandidates : null;
+  let vndBillHtml = '';
+  if(billRef && billRef.amount!=null && Math.abs(billRef.amount)>0.005){
+    const refAmt = Math.abs(billRef.amount);
+    const refStatus = billRef.status && billRef.status!=='none' ? billRef.status : bill;
+    let balTxt = '', balCls = '';
+    if(refStatus==='paid'){ balTxt = money(0); balCls = 'bal-zero'; }
+    else if(refStatus==='partial'){ balTxt = 'Partially Paid'; balCls = 'bal-partial'; }
+    else { balTxt = money(refAmt); balCls = 'bal-due'; }
+    const tentTag = billRefIsTentative ? '<div class="vnd-bill-tent">TENTATIVE — verify and apply</div>' : '';
+
+    // Multi-match: when the same vendor has several BILL invoices, give
+    // Juanita a clickable picker to switch which one the chip represents.
+    const cands = (allCandidates && allCandidates.length) ? allCandidates : null;
+    let multiTag = '';
+    if(cands && cands.length > 1){
+      const isCurrent = c => c.invRef===billRef.invRef && Math.abs((c.amount||0) - (billRef.amount||0)) < 0.01;
+      const currentIdx = cands.findIndex(isCurrent);
+      const list = cands.map((c,i)=>{
+        const selected = i===currentIdx;
+        const lbl = (selected?'▶ ':'')+'Inv #'+(c.invRef||'(blank)')+' · '+(c.amount!=null?money(Math.abs(c.amount)):'no amt')+(c.status?' · '+c.status:'');
+        return `<button class="vnd-bill-pick-item${selected?' selected':''}"
+          data-key="${esc(item.key)}" data-vendor="${esc(c.vendor||'')}" data-invref="${esc(c.invRef||'')}"
+          data-amount="${c.amount||0}" data-status="${esc(c.status||'pend')}"
+          onclick="setBillEntryForRow(this.dataset.key, this.dataset.vendor, this.dataset.invref, this.dataset.amount, this.dataset.status)"
+          title="Use this BILL invoice for this row">${esc(lbl)}</button>`;
+      }).join('');
+      multiTag = `<div class="vnd-bill-multi-wrap" id="bp_${esc(item.key)}">
+        <button class="vnd-bill-multi" onclick="toggleBillPicker('${esc(item.key)}')" title="Click to choose a different BILL invoice for this row">
+          ${(currentIdx>=0?currentIdx+1:1)} of ${cands.length} BILL invoices ▾
+        </button>
+        <div class="vnd-bill-pick-list">${list}</div>
+      </div>`;
+    }
+
+    vndBillHtml = `<div class="vnd-bill">
+      ${tentTag}
+      ${multiTag}
+      <div class="vnd-bill-line"><span class="vnd-bill-lbl">BILL Total:</span><span class="vnd-bill-val">${money(refAmt)}</span></div>
+      <div class="vnd-bill-line"><span class="vnd-bill-lbl">Balance:</span><span class="vnd-bill-val ${balCls}">${balTxt}</span></div>
+    </div>`;
+  }
+
+  return `<tr class="${rowCls.trim()}" id="r_${item.key}">
+    <td>
+      <div class="vnd-name">${esc(item.vendor)}</div>
+      <div class="vnd-sub">${recurBadge}${od&&bill!=='excl'?'<span class="badge badge-od" style="margin-right:4px">Overdue</span>':''}${[item.entity,item.invRef].filter(Boolean).map(esc).join(' · ')}</div>
+      ${vndBillHtml}
+    </td>
+    <td>
+      <div class="dd ${ddCls}${unverifiedPastDue?' verify':''}">${fmtDate(item.dueDate)}${unverifiedPastDue?` <span class="verify-badge" title="${esc(verifyTip)}">⚠ Verify</span>`:''}</div>
+      ${showPastDueInfo?`<div class="dd-sub verify-detail">${daysPast}d past due${lastCleared?` &middot; last cleared ${fmtDate(lastCleared.date)} for ${money(Math.abs(lastCleared.amount))}${lastClearedAcct?' from '+esc(lastClearedAcct):''}`:` &middot; no prior clearing on record`}</div>`:''}
+    </td>
+    <td>
+      <select class="bill-sel ${billCls}"
+        onchange="onBillStatusChange('${item.key}', this.value, this)">
+        ${billOpts}
+      </select>
+      ${(()=>{ if(!billRefIsTentative) return ''; const s = billRef; if(!s) return '';
+        const billAmt = (s.amount!=null && Math.abs(s.amount)>0.005) ? Math.abs(s.amount) : null;
+        // The status the Apply button will set. If BILL's status mapped to
+        // 'none' (status fields blank/unrecognized), suggest 'pend' so the
+        // user can at least flag the row as in BILL — they can refine later.
+        const applyStatus = (s.status && s.status!=='none') ? s.status : 'pend';
+        const applyLabel  = BILL_OPTS.find(o=>o.v===applyStatus)?.lbl || applyStatus;
+        const matchKind = s.kind==='invoice'     ? 'Matched on invoice #'
+                       : s.kind==='name+amount'  ? 'Matched on vendor name + amount'
+                       : s.kind==='name'         ? 'Matched on vendor name only'
+                       :                            'In BILL — status unclear';
+        const matchCls  = (s.kind==='invoice' || s.kind==='name+amount') ? 'match-strong' : 'match-weak';
+        return `<div class="bill-suggest ${matchCls}" title="${esc('Found in your most recent BILL.com import. '+matchKind+'. Verify the invoice # before applying.')}">
+          <div class="bill-suggest-lbl">💡 Possible BILL Match</div>
+          <div class="bill-suggest-vendor">${esc(s.vendor)}</div>
+          ${s.invRef?`<div class="bill-suggest-inv">Inv # ${esc(s.invRef)}</div>`:''}
+          <div class="bill-suggest-row"><span class="bill-suggest-status s-${applyStatus}">${esc(applyLabel)}</span></div>
+          <div class="bill-suggest-howto">${matchKind} (verify before applying)</div>
+          <div class="bill-suggest-actions">
+            <button class="bill-suggest-apply" data-key="${esc(item.key)}" data-status="${esc(applyStatus)}" onclick="applyBillSuggestion(this.dataset.key, this.dataset.status)" title="Set this row's BILL Status dropdown to '${esc(applyLabel)}'. Does NOT change Pay Amt.">Set BILL Status</button>
+            ${billAmt!=null?`<button class="bill-suggest-useamt" data-key="${esc(item.key)}" data-amt="${billAmt.toFixed(2)}" onclick="useBillAmountFromSuggestion(this.dataset.key, this.dataset.amt)" title="Copy the BILL Total (${money(billAmt)}) into this row's Pay Amt field. Does NOT change BILL Status.">Use as Pay Amt</button>`:''}
+          </div>
+        </div>`;
+      })()}
+    </td>
+    <td><div class="amt-ref">${money(item.amtDue)}</div></td>
+    <td>
+      <input type="text" class="pay-inp${mod?' mod':''}" value="${fmtN(payA)}"
+        onfocus="this.select()"
+        title="Type a number or an expression (e.g. 1000+200, 1500-50.25, 3000/2). Tab or click out to compute."
+        onchange="
+          var v=evalCalc(this.value);
+          this.value=fmtN(v);
+          updRow('${item.key}','payAmt',v);
+          this.className='pay-inp'+(Math.abs(v-${item.amtDue})>0.005?' mod':'');
+          saveAndUpdate();">
+    </td>
+    <td>
+      <input type="date" class="payon-inp" value="${toDateInput(payOn)}"
+        onchange="updRow('${item.key}','payOn',fromDateInput(this.value));saveState();">
+    </td>
+    <td>
+      <select class="acct-sel"
+        onchange="updRow('${item.key}','acct',this.value);saveState();renderAll();">
+        ${acctOpts}
+      </select>
+    </td>
+    <td class="appr-cell">
+      <input type="checkbox" class="appr-cb"${ok?' checked':''}
+        onchange="updRow('${item.key}','ok',this.checked);saveAndUpdate();">
+    </td>
+    <td>
+      <textarea class="note-inp" rows="2" placeholder="Notes…"
+        onchange="updRow('${item.key}','note',this.value);saveState();">${esc(note)}</textarea>
+    </td>
+    <td></td>
+  </tr>`;
+}
+
+function manualRowHTML(m){
+  const isDep   = m.kind==='deposit';
+  const isOut   = m.kind==='transfer_out';
+  const isManagedKind = isDep || isOut;
+  const bill = m.bill||(isManagedKind?'na':'none');
+  const ok   = !!m.ok;
+  const note = m.note||'';
+  const rowCls = (ok?'is-approved':'') + (isDep?' deposit-row':'') + (isOut?' transferout-row':'');
+  const billCls= BILL_OPTS.find(o=>o.v===bill)?.cls||'';
+  const billOpts= BILL_OPTS.map(o=>`<option value="${o.v}"${o.v===bill?' selected':''}>${o.lbl}</option>`).join('');
+  const acctOpts= ALL_ACCTS.map(a=>`<option${a===(m.acct||'Fifth Third (5766)')?' selected':''}>${esc(a)}</option>`).join('');
+  const dd = m.dueDate||'';
+  const ddCls = isOverdue(dd)?'od':isDueSoon(dd)?'soon':'';
+
+  const kindVal = isDep ? 'deposit' : isOut ? 'transfer_out' : 'payable';
+  const kindCls = isDep ? 'kind-sel-in' : isOut ? 'kind-sel-out' : 'kind-sel-pay';
+  const kindBadge = `<select class="kind-sel ${kindCls}" title="Change row type"
+    onchange="setManualKind('${m.id}', this.value)">
+    <option value="payable"      ${kindVal==='payable'?'selected':''}>Payable</option>
+    <option value="deposit"      ${kindVal==='deposit'?'selected':''}>↻ Transfer In</option>
+    <option value="transfer_out" ${kindVal==='transfer_out'?'selected':''}>↺ Transfer Out</option>
+  </select>`;
+  const vendorPh = isDep ? 'Source / transfer note…'
+                : isOut ? 'Destination / transfer note…'
+                : 'Vendor name…';
+  const invPh    = (isDep || isOut) ? 'Ref # (optional)' : 'Invoice # (optional)';
+  const datePh   = isDep ? 'Expected date of the deposit / transfer in'
+                : isOut ? 'Expected date of the transfer out'
+                : 'Due date';
+  const amtRefHtml = isDep ? '<span style="color:#15803d;font-weight:600">+ in</span>'
+                  : isOut ? '<span style="color:#b45309;font-weight:600">– out</span>'
+                  : '—';
+  return `<tr class="${rowCls.trim()}" id="mr_${m.id}">
+    <td>
+      ${kindBadge}
+      <input class="vnd-inp" value="${esc(m.vendor||'')}" placeholder="${vendorPh}"
+        onchange="updManual('${m.id}','vendor',this.value);saveState();">
+      <input class="inv-inp" value="${esc(m.invRef||'')}" placeholder="${invPh}"
+        onchange="updManual('${m.id}','invRef',this.value);saveState();">
+    </td>
+    <td>
+      <input type="date" class="date-inp dd ${ddCls}" value="${toDateInput(dd)}"
+        title="${datePh}"
+        onchange="updManual('${m.id}','dueDate',fromDateInput(this.value));saveState();renderAll();">
+    </td>
+    <td>
+      ${isManagedKind
+        ? '<span class="deposit-dash" title="Not applicable to transfers / deposits">—</span>'
+        : `<select class="bill-sel ${billCls}"
+            onchange="updManual('${m.id}','bill',this.value);this.className='bill-sel '+billCls(this.value);saveState();(function(sel){var row=sel.closest('tr');if(row){var inp=row.querySelector('.pay-inp');if(inp){inp.classList.remove('field-unlocked');void inp.offsetWidth;inp.classList.add('field-unlocked');}}})(this);">
+            ${billOpts}
+          </select>`}
+    </td>
+    <td><div class="amt-ref">${amtRefHtml}</div></td>
+    <td>
+      <input type="text" class="pay-inp" value="${fmtN(parseFloat(m.payAmt)||0)}"
+        onfocus="this.select()"
+        title="Type a number or an expression (e.g. 1000+200, 1500-50.25, 3000/2). Tab or click out to compute."
+        onchange="var v=evalCalc(this.value);this.value=fmtN(v);updManual('${m.id}','payAmt',v);saveAndUpdate();">
+    </td>
+    <td>
+      <input type="date" class="payon-inp" value="${toDateInput(m.payOn||'')}"
+        onchange="updManual('${m.id}','payOn',fromDateInput(this.value));saveState();">
+    </td>
+    <td>
+      <select class="acct-sel"
+        onchange="updManual('${m.id}','acct',this.value);saveState();renderAll();">
+        ${acctOpts}
+      </select>
+    </td>
+    <td class="appr-cell">
+      <input type="checkbox" class="appr-cb"${ok?' checked':''}
+        onchange="updManual('${m.id}','ok',this.checked);saveAndUpdate();">
+    </td>
+    <td>
+      <textarea class="note-inp" rows="2" placeholder="Notes…"
+        onchange="updManual('${m.id}','note',this.value);saveState();">${esc(note)}</textarea>
+    </td>
+    <td>
+      <button class="btn-del" onclick="delManual('${m.id}')" title="Remove">×</button>
+    </td>
+  </tr>`;
+}
+
+// ============================================================
+//  GRAND TOTAL
+// ============================================================
+function renderGrand(){
+  const items = buildItems();
+  let total=0;
+  const byAcct={};
+
+  for(const it of items){
+    const st=STATE.rows[it.key]||{};
+    if(!st.ok) continue;
+    const a = st.acct||it.defAcct;
+    const v = st.payAmt!=null?st.payAmt:it.amtDue;
+    total+=v; byAcct[a]=(byAcct[a]||0)+v;
+  }
+  for(const m of (STATE.manual||[])){
+    if(!m.ok) continue;
+    if(m.kind==='deposit') continue;       // deposits are inflows; excluded from grand pay total
+    if(m.kind==='transfer_out') continue;  // transfers out are internal moves; excluded from grand pay total
+    const v=parseFloat(m.payAmt)||0;
+    total+=v; byAcct[m.acct||'?']=(byAcct[m.acct||'?']||0)+v;
+  }
+
+  $('gbVal').textContent = money(total);
+  $('gbBreak').innerHTML = Object.entries(byAcct).map(([a,v])=>`
+    <div class="gb-item">
+      <div class="gb-item-lbl">${a}</div>
+      <div class="gb-item-val">${money(v)}</div>
+    </div>`).join('');
+}
+
+// ============================================================
+//  ACTION QUEUE
+// ============================================================
+function renderQueue(){
+  const items=buildItems();
+  const rows=[];
+
+  for(const it of items){
+    const st=STATE.rows[it.key]||{};
+    if(!st.ok) continue;
+    rows.push({
+      vendor:it.vendor, entity:it.entity, invRef:it.invRef,
+      dueDate:it.dueDate,
+      bill: BILL_OPTS.find(o=>o.v===(st.bill||'none'))?.lbl||'',
+      payAmt: st.payAmt!=null?st.payAmt:it.amtDue,
+      payOn: st.payOn||'',
+      acct: st.acct||it.defAcct, note:st.note||'',
+    });
+  }
+  for(const m of (STATE.manual||[])){
+    if(!m.ok) continue;
+    const isDep = m.kind==='deposit';
+    const isOut = m.kind==='transfer_out';
+    const prefix = isDep ? '↻ TRANSFER IN — '
+                : isOut ? '↺ TRANSFER OUT — '
+                : '';
+    const billLbl = isDep ? 'Deposit / Transfer In'
+                 : isOut ? 'Transfer Out'
+                 : (BILL_OPTS.find(o=>o.v===(m.bill||'none'))?.lbl||'');
+    rows.push({
+      vendor: prefix + (m.vendor||'(unnamed)'),
+      entity:'', invRef:m.invRef||'',
+      dueDate:m.dueDate||'',
+      bill: billLbl,
+      payAmt: parseFloat(m.payAmt)||0,
+      payOn: m.payOn||'',
+      acct:m.acct||'', note:m.note||'',
+      isDeposit: isDep,
+      isTransferOut: isOut,
+    });
+  }
+
+  if(!rows.length){
+    $('aqBody').innerHTML='<div class="aq-empty">No payments approved yet — check ✓ Pay to build the queue.</div>';
+    return;
+  }
+
+  const trs = rows.map(r=>{
+    const bg = r.isDeposit ? '#f0fdf4' : r.isTransferOut ? '#fff7ed' : null;
+    const fg = r.isDeposit ? '#15803d' : r.isTransferOut ? '#b45309' : null;
+    return `<tr${bg?` style="background:${bg}"`:''}>
+    <td><strong${fg?` style="color:${fg}"`:''}>${esc(r.vendor)}</strong>${r.entity?'<br><small style="color:var(--text-muted)">'+esc(r.entity)+'</small>':''}</td>
+    <td>${esc(r.invRef)}</td>
+    <td>${fmtDate(r.dueDate)}</td>
+    <td${fg?` style="color:${fg};font-weight:600"`:''}>${esc(r.bill)}</td>
+    <td style="font-weight:600;text-align:right${fg?`;color:${fg}`:''}">${r.isDeposit?'+':''}${money(r.payAmt)}</td>
+    <td>${r.payOn ? fmtDate(r.payOn) : '—'}</td>
+    <td>${esc(r.acct)}</td>
+    <td style="color:var(--text-2);font-size:12px">${esc(r.note)}</td>
+  </tr>`;}).join('');
+
+  $('aqBody').innerHTML=`<table class="aq-tbl">
+    <thead><tr>
+      <th>Vendor</th><th>Invoice</th><th>Due Date</th>
+      <th>BILL Status</th><th style="text-align:right">Pay Amt</th>
+      <th>Pay On</th><th>Account</th><th>Notes</th>
+    </tr></thead>
+    <tbody>${trs}</tbody>
+  </table>`;
+}
+
+// ============================================================
+//  STATE UPDATERS
+// ============================================================
+function updRow(key,field,val){
+  if(!STATE.rows[key]) STATE.rows[key]={};
+  STATE.rows[key][field]=val;
+}
+function updManual(id,field,val){
+  const i=(STATE.manual||[]).findIndex(r=>r.id===id);
+  if(i>=0) STATE.manual[i][field]=val;
+}
+function addManual(acct, kind){
+  if(!STATE.manual) STATE.manual=[];
+  const id='m'+Date.now()+Math.random().toString(36).slice(2);
+  // Allowed kinds: 'payable' (default), 'deposit' (transfer/deposit IN), 'transfer_out' (transfer OUT)
+  const k = (kind==='deposit' || kind==='transfer_out') ? kind : 'payable';
+  STATE.manual.push({ id, kind:k, vendor:'', invRef:'', dueDate:'',
+    bill: (k==='deposit' || k==='transfer_out') ? 'na' : 'none',
+    payAmt: 0, acct, ok:false, note:'' });
+  saveState(); renderAll();
+  // Make the new row impossible to miss: expand its section if collapsed,
+  // scroll it into view, focus the first input, and briefly flash it.
+  requestAnimationFrame(()=>{
+    const row=document.getElementById('mr_'+id);
+    if(!row) return;
+    const grp=row.closest('.pay-group');
+    if(grp && grp.classList.contains('collapsed')){
+      grp.classList.remove('collapsed');
+      if(grp.id && STATE.collapsed) STATE.collapsed[grp.id]=false;
+      saveState();
+    }
+    try { row.scrollIntoView({behavior:'smooth', block:'center'}); }
+    catch(e) { row.scrollIntoView(); }
+    const inp=row.querySelector('.vnd-inp'); if(inp){ try{ inp.focus(); }catch(e){} }
+    row.classList.add('row-flash');
+    setTimeout(()=>{ if(row && row.classList) row.classList.remove('row-flash'); }, 1600);
+  });
+}
+function addDeposit(acct){ addManual(acct, 'deposit'); }
+function addTransferOut(acct){ addManual(acct, 'transfer_out'); }
+// Convert an existing manual row to a different kind (Payable / Transfer In / Transfer Out)
+function setManualKind(id, newKind){
+  if(!STATE.manual) return;
+  const row = STATE.manual.find(r => r.id === id);
+  if(!row) return;
+  const k = (newKind==='deposit' || newKind==='transfer_out') ? newKind : 'payable';
+  row.kind = k;
+  // Deposits and transfers don't have BILL workflows
+  if(k === 'deposit' || k === 'transfer_out') row.bill = 'na';
+  else if(row.bill === 'na') row.bill = 'none';
+  saveState();
+  renderAll();
+}
+function delManual(id){
+  STATE.manual=(STATE.manual||[]).filter(r=>r.id!==id);
+  saveState(); renderAll();
+}
+
+// Called after checkbox / pay-amount changes
+function saveAndUpdate(){
+  saveState();
+  renderGrand();
+  renderQueue();
+  renderCards();
+
+  // Lightweight: update chips + footer totals without full re-render
+  const items=buildItems();
+  const grps=groupItems(items);
+  for(const [lbl,rows] of Object.entries(grps)){
+    const gid='grp_'+lbl.replace(/\W/g,'_');
+    let appTot=0, depTotSec=0, transOutSec=0;
+    for(const it of rows){
+      if(it.isManual){
+        if(it.ok){
+          const v=parseFloat(it.payAmt)||0;
+          if(it.kind==='deposit') depTotSec+=v;
+          else if(it.kind==='transfer_out') transOutSec+=v;
+          else appTot+=v;
+        }
+      } else {
+        const st=STATE.rows[it.key]||{};
+        if(st.ok) appTot+=st.payAmt!=null?st.payAmt:it.amtDue;
+      }
+    }
+    const chip=$(gid+'_chip');
+    if(chip){
+      chip.className=appTot>0?'grp-chip approved':'grp-chip';
+      chip.textContent=appTot>0?money(appTot)+' approved':rows.length+' item'+(rows.length!==1?'s':'');
+    }
+    const tot=$(gid+'_tot');
+    if(tot){
+      tot.innerHTML = `<span class="lbl">AP OK to pay:</span>`
+        + `<span class="amt${appTot===0?' zero':''}">${money(appTot)}</span>`
+        + (depTotSec>0?`<span class="lbl" style="margin-left:14px">Deposits in:</span><span class="amt deposit-amt">+${money(depTotSec)}</span>`:'')
+        + (transOutSec>0?`<span class="lbl" style="margin-left:14px">Transfers out:</span><span class="amt" style="color:#b45309">${money(transOutSec)}</span>`:'');
+    }
+    // update row highlight (preserve deposit-row class for transfer-in rows)
+    for(const it of rows){
+      const rid = it.isManual?'mr_'+it.id:'r_'+it.key;
+      const tr=document.getElementById(rid);
+      if(tr){
+        const ok = it.isManual?it.ok:!!(STATE.rows[it.key]||{}).ok;
+        const isDep = it.isManual && it.kind==='deposit';
+        const isOut = it.isManual && it.kind==='transfer_out';
+        tr.className = (ok?'is-approved':'') + (isDep?' deposit-row':'') + (isOut?' transferout-row':'');
+        tr.className = tr.className.trim();
+      }
+    }
+
+    // Patch the per-section header (Balance Today / Approved Payables / Approved Deposits In / etc.)
+    // in place so Juanita doesn't lose her scroll position chasing the refresh button.
+    const balRow = $(gid+'_balrow');
+    if(balRow){
+      const summary = acctSummary(lbl);
+      if(summary){
+        const autopayRowsHdr = (shRecur||[]).filter(r =>
+          r.isAutopay && matchAcct(r.payFrom)===lbl && isAutopayRelevant(r.nextDue||r.qboDue)
+        );
+        const activeAutoTot = autopayRowsHdr.reduce((s,r)=>{
+          const ak=vkey(r.vendor,r.invRef||r.billDay,r.entity);
+          const ast=((STATE.autopays||{})[ak]||{}).status||'active';
+          if(ast!=='active') return s;
+          return s+(r.agingBal>0?r.agingBal:r.expAmt);
+        },0);
+        let thisWeekApproved=0, thisWeekDepositsIn=0, thisWeekTransOut=0;
+        for(const it of rows){
+          if(it.isManual){
+            if(it.ok){
+              const pa=parseFloat(it.payAmt)||0;
+              const dateRef = it.payOn || it.dueDate || '';
+              if(it.kind==='deposit'){
+                if(pa>0 && isThisWeek(dateRef)) thisWeekDepositsIn+=pa;
+              } else if(it.kind==='transfer_out'){
+                if(pa>0 && isThisWeek(dateRef)) thisWeekTransOut+=pa;
+              } else if(pa>0 && isThisWeek(it.payOn||'')) thisWeekApproved+=pa;
+            }
+          } else {
+            const st2=STATE.rows[it.key]||{};
+            if(st2.ok){ const pa=st2.payAmt!=null?st2.payAmt:it.amtDue; if(pa>0&&isThisWeek(st2.payOn||'')) thisWeekApproved+=pa; }
+          }
+        }
+        const totalOutflow = activeAutoTot + thisWeekApproved + thisWeekTransOut;
+        const balAfter = summary.bal - totalOutflow + thisWeekDepositsIn;
+        const health = acctHealthInfo(summary.avail, lbl);
+        let alertLabel='', alertDetail='', alertLabelCls='';
+        if(health){
+          if(summary.bal<0){ alertLabel='Overdrawn'; alertDetail='deposit or transfer needed before next autopay.'; alertLabelCls='hdesc-red'; }
+          else if(health.cls==='health-red'){ alertLabel='Critical'; alertDetail='available balance covers less than 1 week of outflows.'; alertLabelCls='hdesc-red'; }
+          else if(health.cls==='health-amber'){ alertLabel='Watch'; alertDetail='available balance covers limited weeks at current spend rate.'; alertLabelCls='hdesc-amber'; }
+          else if(health.cls==='health-green'){ alertLabel='Healthy'; alertDetail='runway is adequate at current spend rate.'; alertLabelCls='hdesc-green'; }
+          else { alertLabel='No data'; alertDetail='no cleared transaction history on file — runway cannot be calculated.'; alertLabelCls='hdesc-none'; }
+        }
+        balRow.innerHTML = sectionBalRowInnerHTML({
+          summary, activeAutoTot, thisWeekApproved, thisWeekDepositsIn, thisWeekTransOut,
+          totalOutflow, balAfter, health, alertLabel, alertDetail, alertLabelCls
+        });
+      }
+    }
+  }
+}
+
+// ============================================================
+//  EXPORT
+// ============================================================
+function exportCSV(){
+  const items=buildItems();
+  const rows=[['Type','Vendor','Entity','Invoice','Due Date','BILL Status','Pay Amount','Pay On','Account','Notes']];
+  for(const it of items){
+    const st=STATE.rows[it.key]||{};
+    if(!st.ok) continue;
+    const bill=BILL_OPTS.find(o=>o.v===(st.bill||'none'))?.lbl||'';
+    rows.push(['Payable',it.vendor,it.entity,it.invRef,fmtDate(it.dueDate),bill,
+      (st.payAmt!=null?st.payAmt:it.amtDue).toFixed(2),
+      st.payOn||'', st.acct||it.defAcct, st.note||'']);
+  }
+  for(const m of (STATE.manual||[])){
+    if(!m.ok) continue;
+    const isDep = m.kind==='deposit';
+    const bill = isDep ? 'Deposit / Transfer In' : (BILL_OPTS.find(o=>o.v===(m.bill||'none'))?.lbl||'');
+    const amt  = (parseFloat(m.payAmt)||0).toFixed(2);
+    rows.push([isDep?'Deposit In':'Payable',m.vendor||'','',(m.invRef||''),fmtDate(m.dueDate||''),bill,
+      amt,(m.payOn||''),(m.acct||''),(m.note||'')]);
+  }
+  const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  dl(csv,'text/csv',`mmi_queue_${today()}.csv`);
+}
+
+// ============================================================
+//  PDF EXPORT
+// ============================================================
+function exportPDF(){
+  // Stamp the print footer with today's date/time
+  const footer = document.getElementById('printFooterDate');
+  if(footer) footer.textContent = 'Printed ' +
+    new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'}) +
+    ' at ' + new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+
+  // Fire print dialog
+  // Note: autopay panels are hidden via @media print CSS
+  // Collapsed payables groups are forced open via @media print CSS
+  window.print();
+}
+
+// ============================================================
+//  GROUP KEY — dynamic instructions based on current row statuses
+// ============================================================
+function grpKeyText(rows, autopayRows){
+  const lines=[];
+  const apStatuses=new Set(autopayRows.map(r=>{
+    const k=vkey(r.vendor,r.invRef||r.billDay,r.entity);
+    return ((STATE.autopays||{})[k]||{}).status||'active';
+  }));
+  const billStatuses=new Set(rows.map(it=>(STATE.rows[it.key]||{}).bill||'none'));
+  function bk(c,t){return `<b style="color:${c}">${t}</b>`;}
+  const AP_DEFS=[
+    {k:'active',   pfx:'Active Autopay rows:',         clr:'#c4b5fd', msg:()=>'These amounts deduct automatically on their scheduled date. No action needed unless rescheduling or canceling.'},
+    {k:'skip',     pfx:'Skip This Week Autopay rows:', clr:'#cbd5e1', msg:(c)=>`Excluded from this week's outflows. Add a note with details about the arrangement or reason for skipping.`},
+    {k:'delay',    pfx:'Delayed Autopay rows:',        clr:'#fcd34d', msg:(c)=>`Excluded from this week's outflows. Enter the rescheduled date in ${bk(c,'Pay On')} and add a note with details about the new payment arrangement.`},
+    {k:'canceled', pfx:'Canceled Autopay rows:',       clr:'#fca5a5', msg:(c)=>`Excluded from all calculations. Document the cancellation date, confirmation, and any relevant arrangement details in ${bk(c,'Notes')}.`},
+  ];
+  const BILL_DEFS=[
+    {k:'none',    pfx:'Not in BILL rows:',         clr:'rgba(255,255,255,0.7)', msg:(c)=>`Update ${bk(c,'BILL Status')} to reflect the current stage in BILL.com. Enter ${bk(c,'Pay Amt')} for partial payments and set a ${bk(c,'Pay On')} date.`},
+    {k:'sched',   pfx:'Scheduled Payable rows:',   clr:'#93c5fd',               msg:(c)=>`Confirm ${bk(c,'Pay Amt')} matches what is queued in BILL.com and verify the ${bk(c,'Pay On')} date. Check ${bk(c,'✓ Pay')} to add to the approval queue.`},
+    {k:'pend',    pfx:'Pending Approval rows:',    clr:'#fcd34d',               msg:(c)=>`Awaiting approval in BILL.com. Once approved, confirm ${bk(c,'Pay Amt')}, set a ${bk(c,'Pay On')} date, and check ${bk(c,'✓ Pay')}.`},
+    {k:'partial', pfx:'Partially Paid rows:',      clr:'#fdba74',               msg:(c)=>`A balance remains. Enter the remaining amount in ${bk(c,'Pay Amt')}, set a ${bk(c,'Pay On')} date, and check ${bk(c,'✓ Pay')}.`},
+    {k:'paid',    pfx:'Paid Payable rows:',        clr:'#86efac',               msg:(c)=>'Payment confirmed. No further action needed unless a partial balance remains.'},
+    {k:'hold',    pfx:'On Hold rows:',             clr:'#fca5a5',               msg:(c)=>`Item is on hold in BILL.com. Resolve the hold before updating ${bk(c,'BILL Status')} or scheduling payment.`},
+    {k:'excl',    pfx:'Excluded — Not Aging rows:',clr:'#cbd5e1',               msg:(c)=>`Surfaced from QBO/BILL but shouldn't be acted on this cycle. Typical reasons: due date is wrong, autopay needs to be paused in BILL.com, or the bill is being handled outside the planner. Excluded rows don't count toward the aging total. Add a ${bk(c,'Notes')} entry so you remember why.`},
+    {k:'na',      pfx:'N/A rows:',                 clr:'#d8b4fe',               msg:(c)=>'Not applicable to the BILL.com workflow. No action required.'},
+  ];
+  for(const d of AP_DEFS){
+    if(apStatuses.has(d.k))
+      lines.push(`<span style="color:${d.clr};font-weight:700">${d.pfx}</span> <span style="color:#fff">${d.msg(d.clr)}</span>`);
+  }
+  for(const d of BILL_DEFS){
+    if(billStatuses.has(d.k))
+      lines.push(`<span style="color:${d.clr};font-weight:700">${d.pfx}</span> <span style="color:#fff">${d.msg(d.clr)}</span>`);
+  }
+  return lines.join('<br>');
+}
+
+// ============================================================
+//  DATE HELPERS
+// ============================================================
+function isThisWeek(dateStr){
+  if(!dateStr) return false;
+  const d=parseDate(dateStr); if(!d) return false;
+  const now=new Date(); now.setHours(0,0,0,0);
+  const sun=new Date(now); sun.setDate(now.getDate()-now.getDay()); // Sunday start
+  const sat=new Date(sun); sat.setDate(sun.getDate()+6); sat.setHours(23,59,59,999);
+  return d>=sun && d<=sat;
+}
+
+// ============================================================
+//  EMAIL QUEUE
+// ============================================================
+function emailQueue(){
+  const items=buildItems();
+  const rows=[];
+  for(const it of items){
+    const st=STATE.rows[it.key]||{};
+    if(!st.ok) continue;
+    const bill=BILL_OPTS.find(o=>o.v===(st.bill||'none'))?.lbl||'';
+    rows.push({vendor:it.vendor,inv:it.invRef||'',due:fmtDate(it.dueDate),bill,
+      amt:(st.payAmt!=null?st.payAmt:it.amtDue),payOn:st.payOn||'',acct:st.acct||it.defAcct,note:st.note||''});
+  }
+  for(const m of (STATE.manual||[])){
+    if(!m.ok) continue;
+    const isDep = m.kind==='deposit';
+    const bill = isDep ? 'Deposit / Transfer In' : (BILL_OPTS.find(o=>o.v===(m.bill||'none'))?.lbl||'');
+    rows.push({vendor:m.vendor||'(unnamed)',inv:m.invRef||'',due:fmtDate(m.dueDate||''),bill,
+      amt:parseFloat(m.payAmt)||0,payOn:m.payOn||'',acct:m.acct||'',note:m.note||'',isDeposit:isDep});
+  }
+  if(!rows.length){ alert('No approved payments to send.'); return; }
+  const wk=$('weekOf')?.textContent||today();
+  const totalOut = rows.reduce((s,r)=>s + (r.isDeposit?0:r.amt), 0);
+  const totalIn  = rows.reduce((s,r)=>s + (r.isDeposit?r.amt:0), 0);
+  let body='MMI Cash Position Review — Approved Payables Queue%0D%0A';
+  body+=`Week of ${wk}%0D%0A%0D%0A`;
+  rows.forEach((r,i)=>{
+    const label = r.isDeposit ? '↻ TRANSFER IN — ' : '';
+    body+=`${i+1}. ${encodeURIComponent(label+r.vendor)}${r.inv?' ('+encodeURIComponent(r.inv)+')':''}%0D%0A`;
+    const amtLbl = r.isDeposit ? 'Amount In' : 'Amount';
+    body+=`   Due: ${r.due} | ${amtLbl}: ${encodeURIComponent(money(r.amt))} | Pay On: ${r.payOn||'—'} | Account: ${encodeURIComponent(r.acct)}%0D%0A`;
+    if(r.bill) body+=`   ${r.isDeposit?'Type':'BILL Status'}: ${encodeURIComponent(r.bill)}%0D%0A`;
+    if(r.note) body+=`   Notes: ${encodeURIComponent(r.note)}%0D%0A`;
+    body+='%0D%0A';
+  });
+  body+=`TOTAL OUT: ${encodeURIComponent(money(totalOut))}`;
+  if(totalIn>0) body+=`%0D%0ATOTAL IN: ${encodeURIComponent('+'+money(totalIn))}%0D%0ANET: ${encodeURIComponent(money(totalOut-totalIn))}`;
+  const subj=encodeURIComponent(`MMI Approved Payables — Week of ${wk}`);
+  window.location.href=`mailto:finance@malemogulinitiative.org?subject=${subj}&body=${body}`;
+}
+
+// ============================================================
+//  HELPERS
+// ============================================================
+function $(id){ return document.getElementById(id); }
+function trim(v){ return String(v??'').trim(); }
+function amt(v){
+  let s=String(v??'').trim();
+  // Handle parenthesized negatives from gviz/accounting format: (272) or ($272.00)
+  if(s.startsWith('(')&&s.endsWith(')')) s='-'+s.slice(1,-1);
+  const n=parseFloat(s.replace(/[,$\s]/g,''));
+  return isNaN(n)?0:n;
+}
+function parseAmt(s){ return amt(s); }
+// Safe calculator: lets Pay Amt accept expressions like "1000+200" or
+// "1500-50.25" or "(3000-450)/2", evaluated on blur — mirrors QBO's
+// arithmetic-in-amount behavior. Strict whitelist of allowed characters so
+// the Function constructor can't be abused.
+function evalCalc(s){
+  s = String(s||'').replace(/[$,\s]/g,'');
+  if(!s) return 0;
+  // Plain number? short-circuit to parseAmt
+  if(/^-?\d+(\.\d+)?$/.test(s)) return parseFloat(s);
+  // Reject if any character outside the safe whitelist
+  if(!/^[\d.+\-*/()]+$/.test(s)) return amt(s);
+  // Reject pathological inputs (consecutive operators except for +/- sign, leading op)
+  if(/[+\-*/]{2,}/.test(s.replace(/[+\-]{1,2}/g,'+'))) return amt(s);
+  try {
+    const v = Function('"use strict"; return (' + s + ')')();
+    return (typeof v === 'number' && isFinite(v)) ? v : amt(s);
+  } catch(e){ return amt(s); }
+}
+function money(v){ return '$'+Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtN(v){ return (v??0).toFixed(2); }
+function today(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function dl(content,type,name){ const b=new Blob([content],{type}); const u=URL.createObjectURL(b); const a=document.createElement('a'); a.href=u; a.download=name; a.click(); URL.revokeObjectURL(u); }
+
+function vkey(v,i,e){ return [v,i,e].join('||').replace(/\s+/g,'_').toLowerCase(); }
+
+function matchAcct(payFrom){
+  if(!payFrom) return null;
+  const s=payFrom.toLowerCase();
+  // Chase 8827 must match before generic 'chase' to avoid false positive with Chase CC
+  for(const a of BANK_ACCTS){
+    for(const p of a.match){ if(s.includes(p)) return a.label; }
+  }
+  return null;
+}
+
+function billCls(v){ return BILL_OPTS.find(o=>o.v===v)?.cls||''; }
+
+function parseDate(s){
+  if(!s) return null;
+  // MM/DD/YYYY or MM/DD/YY (gviz returns 2-digit years)
+  const m=String(s).match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+  if(m){ const y=+m[3]; return new Date(y<100?y+2000:y,+m[1]-1,+m[2]); }
+  // YYYY-MM-DD
+  const m2=String(s).match(/(\d{4})-(\d{2})-(\d{2})/);
+  if(m2) return new Date(+m2[1],+m2[2]-1,+m2[3]);
+  // gviz raw date: Date(year,month,day) — month is 0-indexed
+  const m3=String(s).match(/Date\((\d+),(\d+),(\d+)\)/);
+  if(m3) return new Date(+m3[1],+m3[2],+m3[3]);
+  // Fallback: handles "May 1, 2026", "January 15, 2026", etc.
+  const d=new Date(s);
+  return isNaN(d.getTime())?null:d;
+}
+function isOverdue(s){ const d=parseDate(s); if(!d) return false; const t=new Date(); t.setHours(0,0,0,0); return d<t; }
+function isDueSoon(s){
+  const d=parseDate(s); if(!d) return false;
+  const t=new Date(); t.setHours(0,0,0,0);
+  const w=new Date(t); w.setDate(w.getDate()+7);
+  return d>=t&&d<=w;
+}
+// For autopays: show if overdue, due within 14 days, or no date at all
+function isAutopayRelevant(s){
+  if(!s) return true; // no date → always show
+  const d=parseDate(s); if(!d) return true;
+  const t=new Date(); t.setHours(0,0,0,0);
+  const w=new Date(t); w.setDate(w.getDate()+14);
+  return d<=w; // includes overdue and up-to-14-days-out
+}
+function fmtDate(s){
+  if(s instanceof Date) return s.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  const d=parseDate(s);
+  if(!d) return s||'—';
+  return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+}
+// Convert any parseDate-compatible string to YYYY-MM-DD for <input type="date">
+function toDateInput(s){ const d=parseDate(s); if(!d) return ''; return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+// Convert YYYY-MM-DD back to MM/DD/YYYY for storage
+function fromDateInput(s){ if(!s) return ''; const[y,m,d]=s.split('-'); return m+'/'+d+'/'+y; }
+
+function setOverlay(show,msg){
+  $('overlay').style.display=show?'':'none';
+  if(msg) $('overlayTxt').textContent=msg;
+}
+function setStatus(type,msg){
+  $('sDot').className='s-dot '+type;
+  $('sTxt').textContent=msg;
+  const fab = $('fabRefresh');
+  if(fab){
+    if(type==='loading') fab.classList.add('is-loading');
+    else fab.classList.remove('is-loading');
+  }
+}
+function showErr(msg){ const e=$('errBanner'); e.textContent=msg; e.style.display=''; }
+function hideErr(){ $('errBanner').style.display='none'; }
+
+// ============================================================
+//  COMPACT BAR — IntersectionObserver
+// ============================================================
+let _barObserver = null;
+function setupCompactBar(){
+  if(_barObserver){ _barObserver.disconnect(); }
+  const grid = $('acctGrid');
+  const bar  = $('acctBar');
+  if(!grid || !bar) return;
+  _barObserver = new IntersectionObserver(function(entries){
+    const visible = !entries[0].isIntersecting;
+    bar.style.display = visible ? 'flex' : 'none';
+    document.documentElement.style.setProperty('--bar-offset', visible ? bar.offsetHeight+'px' : '0px');
+    // Recalculate th top offsets after bar visibility changes
+    updateGrpHdrH();
+  }, { threshold: 0 });
+  _barObserver.observe(grid);
+}
+
+// ============================================================
+//  STICKY OFFSETS — grp-hdr + column headers
+// ============================================================
+function updateGrpHdrH(){
+  const bar = $('acctBar');
+  const barH = (bar && bar.style.display === 'flex') ? bar.offsetHeight : 0;
+  document.querySelectorAll('.pay-group').forEach(function(grp){
+    const hdr = grp.querySelector('.grp-hdr');
+    const ths = grp.querySelectorAll('.pay-tbl th');
+    if(!hdr || !ths.length) return;
+    const offset = barH + hdr.offsetHeight;
+    ths.forEach(function(th){ th.style.top = offset + 'px'; });
+  });
+}
+function updateStickyTop(){}
+
+// ============================================================
+//  AUTOPAY PANEL TOGGLE
+// ============================================================
+function toggleApPanel(key){
+  if(!STATE.apExpanded) STATE.apExpanded={};
+  STATE.apExpanded[key]=!STATE.apExpanded[key];
+  const el=$('ap_'+key);
+  if(el) el.classList.toggle('open', !!STATE.apExpanded[key]);
+  saveState();
+}
+
+// ============================================================
+//  COLLAPSIBLE GROUPS
+// ============================================================
+function toggleGroup(gid){
+  const el = $(gid);
+  if(!el) return;
+  const isCollapsed = el.classList.toggle('collapsed');
+  if(!STATE.collapsed) STATE.collapsed={};
+  STATE.collapsed[gid] = isCollapsed;
+  saveState();
+}
+function toggleGrpKey(gid){
+  const el = $(gid+'_keywrap');
+  if(!el) return;
+  const isOpen = el.classList.toggle('open');
+  if(!STATE.keyOpen) STATE.keyOpen={};
+  STATE.keyOpen[gid] = isOpen;
+  const btn = el.querySelector('.grp-key-btn span:first-child');
+  if(btn) btn.textContent = isOpen ? '💡 Hide legend' : '💡 Show legend';
+  saveState();
+}
+
+// ============================================================
+//  AUTOPAY OVERRIDES
+// ============================================================
+function updAutopay(key, field, val){
+  if(!STATE.autopays) STATE.autopays={};
+  if(!STATE.autopays[key]) STATE.autopays[key]={ status:'active', newDate:'' };
+  STATE.autopays[key][field]=val;
+}
+
+function autopayRowHTML(r){
+  const k = vkey(r.vendor, r.invRef||r.billDay, r.entity);
+  const st = (STATE.autopays||{})[k] || { status:'active', newDate:'' };
+  const isSkip     = st.status==='skip';
+  const isDelay    = st.status==='delay';
+  const isCanceled = st.status==='canceled';
+  const isPaid     = st.status==='paid';
+  const rowCls  = isSkip ? 'autopay-row is-skipped' : isCanceled ? 'autopay-row is-canceled' : isPaid ? 'autopay-row is-paid' : 'autopay-row';
+  const selCls  = st.status==='skip' ? 'skip' : st.status==='delay' ? 'delay' : st.status==='canceled' ? 'canceled' : isPaid ? 'paid' : '';
+  const baseAmt = r.agingBal>0 ? r.agingBal : r.expAmt;
+  const needsHist = !baseAmt || Math.abs(baseAmt) <= 0.01;
+  const histAmt = needsHist ? historicalAmount(r.vendor) : null;
+  const effAmt  = st.payAmt!=null ? st.payAmt : (histAmt||baseAmt);
+  const amtFromHist = needsHist && histAmt!=null && st.payAmt==null;
+  const dueDisp = effectiveDueDate(r);
+  const wasCleared = autopayCleared(r.vendor);
+
+  // "Verify date" signal: active autopay whose effective due date is in the past
+  // AND has not cleared this month. Juanita needs to judge whether the bill is
+  // genuinely aging or the due date in source data is stale/wrong.
+  const today_=(()=>{ const d=new Date(); d.setHours(0,0,0,0); return d; })();
+  const dueParsed = parseDate(dueDisp);
+  const isPastDue = !!(dueParsed && dueParsed < today_);
+  const daysPast  = isPastDue ? Math.round((today_-dueParsed)/86400000) : 0;
+  const unverifiedPastDue = st.status==='active' && isPastDue && !wasCleared;
+  const lastCleared = unverifiedPastDue ? lastClearedForVendor(r.vendor) : null;
+  const lastClearedAcct = lastCleared ? shortAcctLabel(lastCleared.account) : '';
+  const verifyTip = unverifiedPastDue
+    ? `Due date is ${daysPast} day${daysPast===1?'':'s'} in the past and no clearing transaction has posted this month.\n\n`
+      + (lastCleared
+          ? `Last cleared ${fmtDate(lastCleared.date)} for ${money(Math.abs(lastCleared.amount))}${lastClearedAcct?' from '+lastClearedAcct:''}. Compare against the vendor's billing cadence to judge whether this is truly aging or the date needs updating.`
+          : `No prior clearing transactions found for this vendor. The due date may be wrong, or this is genuinely a new aging item.`)
+      + `\n\nIf the date is wrong: use "Delay / reschedule" and enter the corrected date. If genuinely aging: leave Active and follow up with the vendor.`
+    : '';
+
+  // Slated-to-pay: active autopay with effective due date on or before end-of-week Saturday
+  // Uses dueDisp (effectiveDueDate) so the check matches what's shown in the Due Date column
+  const isSlatedThisWeek = (()=>{
+    if(st.status!=='active') return false;
+    const now=new Date(); now.setHours(0,0,0,0);
+    const weekSun=new Date(now); weekSun.setDate(now.getDate()-now.getDay());
+    const weekSat=new Date(weekSun); weekSat.setDate(weekSun.getDate()+6); weekSat.setHours(23,59,59,999);
+    const d=parseDate(dueDisp);
+    return !!d && d<=weekSat;
+  })();
+  const slatedCheck = isSlatedThisWeek
+    ? `<div title="Counted in Slated to Pay" style="text-align:center;font-size:13px;color:#1a2e4a;background:#fce4ec;border-radius:50%;width:20px;height:20px;line-height:20px;margin:auto;user-select:none">✓</div>`
+    : '';
+
+  return `<tr class="${rowCls}" id="ar_${k}">
+    <td>
+      <div class="vnd-name">${esc(r.vendor)}</div>
+      <div class="vnd-sub"><a class="badge" href="https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit#gid=1899593559&range=A${r.sourceRow||1}" target="_blank" title="Open Recurring Payables in source workbook" style="background:#ede9fe;color:#5b21b6;margin-right:4px;text-decoration:none;cursor:pointer">Autopay ↗</a>${esc(r.entity||'')}${r.billDay?' · Day '+r.billDay:''}</div>
+    </td>
+    <td>
+      <div class="dd${unverifiedPastDue?' verify':''}">${fmtDate(dueDisp)}${unverifiedPastDue?` <span class="verify-badge" title="${esc(verifyTip)}">⚠ Verify date</span>`:''}</div>
+      ${wasCleared?`<div class="dd-sub cleared">✓ cleared ${fmtDate(wasCleared)}</div>`:''}
+      ${unverifiedPastDue?`<div class="dd-sub verify-detail">${daysPast}d past due${lastCleared?` &middot; last cleared ${fmtDate(lastCleared.date)} for ${money(Math.abs(lastCleared.amount))}${lastClearedAcct?' from '+esc(lastClearedAcct):''}`:` &middot; no prior clearing on record`}</div>`:''}
+    </td>
+    <td>
+      <select class="autopay-sel ${selCls}"
+        onchange="
+          updAutopay('${k}','status',this.value);
+          var v=this.value;
+          this.className='autopay-sel '+(v==='skip'?'skip':v==='delay'?'delay':v==='canceled'?'canceled':v==='paid'?'paid':'');
+          saveState(); renderAll();">
+        <option value="active"${st.status==='active'?' selected':''}>Active (deducting)</option>
+        ${isSlatedThisWeek?`<option value="skip"${st.status==='skip'?' selected':''}>Skip this week</option>`:''}
+        <option value="delay"${st.status==='delay'?' selected':''}>Delay / reschedule</option>
+        <option value="paid"${isPaid?' selected':''}>Paid / Cleared</option>
+        <option value="canceled"${isCanceled?' selected':''}>Canceled</option>
+      </select>
+    </td>
+    <td><div class="amt-ref">${baseAmt>0?money(baseAmt):(histAmt?money(histAmt)+'*':'—')}</div>
+      ${amtFromHist?`<div style="font-size:9px;color:var(--text-muted);margin-top:1px">*from history</div>`:''}</td>
+    <td><input type="text" class="pay-inp${amtFromHist?' mod':''}" value="${fmtN(effAmt)}"
+      onfocus="this.select()"
+      onchange="var v=evalCalc(this.value);this.value=fmtN(v);updAutopay('${k}','payAmt',v);saveState();"
+      title="${amtFromHist?'Pre-filled from most recent historical transaction — edit to override. Type a number or an expression (e.g. 1000+200) and Tab to compute.':'Type a number or an expression (e.g. 1000+200, 1500-50.25). Tab or click out to compute.'}"></td>
+    <td>
+      ${isDelay
+        ? `<input type="date" class="payon-inp field-unlocked" value="${toDateInput(st.newDate||'')}"
+            onchange="updAutopay('${k}','newDate',fromDateInput(this.value));saveState();">`
+        : st.status==='active'
+          ? `<div style="font-size:11px;color:rgba(255,255,255,0.6);white-space:nowrap">${fmtDate(dueDisp)}</div>`
+          : '—'}
+    </td>
+    <td>
+      <div class="amt-ref">${matchAcct(r.payFrom)||r.payFrom||'—'}</div>
+      <div style="font-size:10px;color:var(--text-muted);margin-top:2px">${isSkip?'Skipped this week':isDelay?'Rescheduled':isCanceled?'Canceled':isPaid?'Paid / Cleared':'Auto-deducts'}</div>
+    </td>
+    <td style="text-align:center">
+      ${isSlatedThisWeek
+        ? slatedCheck
+        : st.status==='active'
+          ? `<span title="Scheduled — outside this week's window" style="font-size:15px;cursor:default">📅</span>`
+          : st.status==='skip'
+            ? `<span title="Skipped this week" style="font-size:15px;cursor:default">⏸️</span>`
+            : st.status==='delay'
+              ? `<span title="Delayed / rescheduled" style="font-size:15px;cursor:default">⏭️</span>`
+              : isPaid
+                ? `<span title="Paid / Cleared" style="font-size:15px;cursor:default">✅</span>`
+                : `<span title="Canceled" style="font-size:15px;cursor:default">🚫</span>`}
+    </td>
+    <td>
+      ${(isSkip||isDelay||isCanceled||isPaid)?`<div>
+        <textarea class="note-inp autopay-note" rows="2"
+          placeholder="${isSkip?'Add details about this arrangement — adjusted timing, alternative payment plan, or vendor communication.':isDelay?'Add details about the new payment arrangement.':isPaid?'Confirm the payment amount, date cleared, and any discrepancy from expected.':'Document when the subscription was canceled, who confirmed it, and any relevant details.'}"
+          onchange="updAutopay('${k}','note',this.value);saveState();">${esc(st.note||'')}</textarea>
+      </div>`:''}
+    </td>
+    <td></td>
+  </tr>`;
+}
+
+// ============================================================
+//  BILL.COM CSV IMPORT
+// ============================================================
+// Normalize a vendor name for fuzzy matching: lowercase, strip punctuation,
+// strip common business suffixes (LLC, Inc, Corp, Co, Ltd, Partners, LP, LLP),
+// collapse whitespace. Lets "Terra Business Solutions" match
+// "Terra Business Solutions, LLC" or "Terra Business Solutions Inc."
+function normalizeVendor(name){
+  return String(name||'')
+    .toLowerCase()
+    .replace(/[.,'"()&/\\-]/g,' ')
+    .replace(/\b(llc|l\.l\.c|inc|incorporated|corp|corporation|co|company|ltd|limited|llp|lp|partners|the)\b/g,' ')
+    .replace(/\s+/g,' ')
+    .trim();
+}
+// Tokenized similarity between two normalized vendor names.
+// Returns { score, common, strong, rareCommon }.
+//   - score: IDF-weighted Jaccard similarity (intersection / union of token sets, weighted)
+//   - common: total shared meaningful tokens (length>=3)
+//   - rareCommon: shared tokens that are DISTINCTIVE — appearing in <= 25%
+//     of the BILL corpus. These are the tokens that actually identify a
+//     vendor (e.g. "terra", "ada", "mckinley"), as opposed to noise like
+//     "stipend", "yip", "dfss", "monthly" that recur across many entries.
+//   - strong: true only when >=1 rareCommon token AND IDF-weighted score >= 0.5.
+//
+// idfMap (optional): { token: idf } from the BILL corpus. If omitted, every
+// token weights 1.0 (degenerates to plain Jaccard).
+function vendorSimilarity(a, b, idfMap){
+  const A = a.split(' ').filter(w=>w.length>=3);
+  const B = b.split(' ').filter(w=>w.length>=3);
+  if(!A.length||!B.length) return { score:0, common:0, rareCommon:0, strong:false };
+  const SA = new Set(A), SB = new Set(B);
+  const weight = t => idfMap ? (idfMap[t] || idfMap.__defaultIdf__ || 1) : 1;
+  const isRare = t => idfMap ? ((idfMap[t] || idfMap.__defaultIdf__ || 1) >= (idfMap.__rareCutoffIdf__ || 1.39)) : true;
+  let common=0, rareCommon=0, interW=0;
+  for(const w of SA){
+    if(SB.has(w)){
+      common++;
+      interW += weight(w);
+      if(isRare(w)) rareCommon++;
+    }
+  }
+  let unionW = 0;
+  for(const w of SA) unionW += weight(w);
+  for(const w of SB) if(!SA.has(w)) unionW += weight(w);
+  const score = unionW ? interW / unionW : 0;
+  // STRONG = at least one DISTINCTIVE shared token (rare in the BILL
+  // corpus) + IDF-weighted Jaccard >= 0.3. Allows single-token matches
+  // when that token is a unique vendor identifier (e.g. "Walmart",
+  // "Terra"), while rejecting cross-matches built only on generic terms
+  // ("YIP", "stipend", "DFSS").
+  const isSubset = common === Math.min(SA.size, SB.size);
+  const strong = common >= 1 && score >= 0.3 && (
+    idfMap ? rareCommon >= 1 : (isSubset && common >= 2)
+  );
+  return { score, common, rareCommon, strong };
+}
+
+// Build an IDF map from BILL.com entries. Each UNIQUE vendor name counts as
+// one document, so a vendor with 10 invoices doesn't artificially demote
+// its own name tokens to "noise." Common cross-vendor tokens (yip, dfss,
+// stipend, monthly) still end up with low weight.
+function buildBillIdfMap(entries){
+  if(!entries.length) return null;
+  // Dedup by vendorNorm so multi-invoice vendors don't inflate df for their
+  // own identifying tokens.
+  const uniqByVendor = new Map();
+  for(const e of entries){
+    const key = (e.vendorNorm || normalizeVendor(e.vendor || '')).trim();
+    if(!key) continue;
+    if(!uniqByVendor.has(key)) uniqByVendor.set(key, e);
+  }
+  const uniqEntries = [...uniqByVendor.values()];
+  const N = uniqEntries.length;
+  if(!N) return null;
+  const df = {};
+  for(const e of uniqEntries){
+    const seen = new Set();
+    for(const w of (e.vendorNorm||'').split(' ')){
+      if(w.length<3 || seen.has(w)) continue;
+      seen.add(w);
+      df[w] = (df[w]||0) + 1;
+    }
+  }
+  const idf = {};
+  for(const w of Object.keys(df)){
+    idf[w] = Math.log((N + 1) / (df[w] + 1)) + 1;
+  }
+  idf.__defaultIdf__ = Math.log((N + 1) / 1) + 1;
+  idf.__rareCutoffIdf__ = Math.log((N + 1) / (Math.max(1, Math.floor(N * 0.25)) + 1)) + 1;
+  idf.__version__ = 2; // bump so legacy IDF maps get rebuilt
+  return idf;
+}
+
+// Maps BILL.com Approval + Payment status → HTML dropdown value.
+// Uses exact-match lookups against known BILL.com / QBO Sync status values
+// so that "Not Paid" / "Unpaid" never get mismapped to "Paid". Default for
+// entries that exist in BILL but with unrecognized status fields is 'pend'
+// (Pending Appr) — more useful than 'none' (Not in BILL), which would hide
+// the row's BILL presence entirely.
+function mapBillStatus(payStatus, apprStatus){
+  const pay  = String(payStatus  ||'').trim().toLowerCase();
+  const appr = String(apprStatus ||'').trim().toLowerCase();
+  const PARTIAL = new Set(['partially paid','partial','partial payment']);
+  const PAID    = new Set(['paid','fully paid','paid in full','cleared']);
+  const UNPAID  = new Set(['unpaid','not paid','not yet paid','open','outstanding','due','']);
+  const APPROVED = new Set(['approved','approved by owner','fully approved']);
+  const PENDING  = new Set(['approving','assigned','pending approval','pending','in approval']);
+  const HOLD     = new Set(['on hold','hold','disputed']);
+
+  if(PARTIAL.has(pay))  return 'partial';
+  if(PAID.has(pay))     return 'paid';
+  // For unpaid / unrecognized payment values, fall through to approval
+  if(APPROVED.has(appr)) return 'sched';
+  if(PENDING.has(appr))  return 'pend';
+  if(HOLD.has(appr) || HOLD.has(pay)) return 'hold';
+  // Has some value in either field, but didn't match anything known
+  if((pay && !UNPAID.has(pay)) || (appr && !UNPAID.has(appr))) return 'pend';
+  if(pay || appr) return 'pend'; // unpaid + no approval info → still in BILL, treat as pending
+  return 'none';
+}
+
+function parseCSVLine(line){
+  const cols=[];
+  let cur='', inQ=false;
+  for(let i=0;i<line.length;i++){
+    const c=line[i];
+    if(c==='"'){ inQ=!inQ; continue; }
+    if(c===','&&!inQ){ cols.push(cur.trim()); cur=''; continue; }
+    cur+=c;
+  }
+  cols.push(cur.trim());
+  return cols;
+}
+
+// Look up the persisted BILL.com import for a likely match against this AP item.
+// Returns { vendor, invRef, status, statusLabel, amount, kind } or null.
+// kind: 'invoice' = invoice # match (strongest); 'name+amount' = strong
+// name subset match + close amount; 'name' = strong name subset match only.
+// Used to surface inline suggestions on "Not in BILL" rows so Juanita can
+// override without leaving the planner.
+function findBillSuggestion(item){
+  const data = STATE.billData;
+  if(!data || !data.entries || !data.entries.length) return null;
+  const itemInv = String(item.invRef||'').toLowerCase().trim();
+  const itemNorm = normalizeVendor(item.vendor);
+  if(!itemNorm) return null;
+  const itemAmt = Math.abs(item.amtDue||0);
+
+  const toResult = (e, kind)=>({
+    vendor: e.vendor, invRef: e.invRef||'', status: e.status,
+    statusLabel: BILL_OPTS.find(o=>o.v===e.status)?.lbl || e.status,
+    amount: e.amount, kind,
+  });
+
+  // Backfill IDF map and per-entry vendorNorm. Rebuild legacy IDF maps that
+  // didn't dedup by vendor (version 1) so multi-invoice vendors like Marc
+  // Realty don't get their own name tokens demoted.
+  if((!data.idf || data.idf.__version__ !== 2) && data.entries.length){
+    for(const e of data.entries){
+      if(!e.vendorNorm) e.vendorNorm = normalizeVendor(e.vendor || '');
+    }
+    data.idf = buildBillIdfMap(data.entries);
+  }
+  const idfMap = data.idf || null;
+
+  // Always enumerate strong name-match candidates so the chip can show
+  // "1 of N matches" regardless of which path picked the best entry.
+  let candidates=[];
+  for(const e of data.entries){
+    const eNorm = e.vendorNorm || normalizeVendor(e.vendor || '');
+    if(!eNorm) continue;
+    if(!e.vendorNorm) e.vendorNorm = eNorm;
+    const sim = vendorSimilarity(itemNorm, eNorm, idfMap);
+    if(!sim.strong) continue;
+    candidates.push({ entry:e, sim });
+  }
+  candidates.sort((a,b)=>{
+    const aAmtDist = a.entry.amount!=null ? Math.abs(Math.abs(a.entry.amount)-itemAmt) : Infinity;
+    const bAmtDist = b.entry.amount!=null ? Math.abs(Math.abs(b.entry.amount)-itemAmt) : Infinity;
+    if(aAmtDist!==bAmtDist) return aAmtDist - bAmtDist;
+    return b.sim.score - a.sim.score;
+  });
+
+  const allCandidates = candidates.map(c => ({
+    vendor: c.entry.vendor, invRef: c.entry.invRef||'',
+    status: c.entry.status, amount: c.entry.amount,
+  }));
+
+  // 1) Exact invoice number match wins for the "best" pick. We still
+  // attach the full name-match candidate list so the multi-invoice
+  // tooltip works.
+  if(itemInv){
+    const exact = data.entries.find(e => String(e.invRef||'').toLowerCase().trim() === itemInv);
+    if(exact){
+      const r = toResult(exact, 'invoice');
+      r.allCandidates = allCandidates.length ? allCandidates : [{
+        vendor: exact.vendor, invRef: exact.invRef||'',
+        status: exact.status, amount: exact.amount,
+      }];
+      return r;
+    }
+  }
+
+  if(!candidates.length) return null;
+  const best = candidates[0];
+  const amtDist = best.entry.amount!=null ? Math.abs(Math.abs(best.entry.amount)-itemAmt) : Infinity;
+  const closeAmt = itemAmt>0 && amtDist <= Math.max(1, itemAmt*0.02);
+  const result = toResult(best.entry, closeAmt ? 'name+amount' : 'name');
+  result.allCandidates = allCandidates;
+  return result;
+}
+
+// In-page sort diagnostic — opened via the "🔍 Sort Diagnostic" header
+// button. Builds the same tagged list each payables section uses, runs
+// the same comparator, and lists rows in their actual sort order with
+// the dates the sort is using. No DevTools required.
+function showSortDebug(){
+  try {
+    const items = buildItems();
+    const grps  = groupItems(items);
+    const today = new Date(); today.setHours(0,0,0,0);
+    const lines = [];
+    lines.push('Generated '+today.toLocaleString()+'\n');
+    for(const [lbl, rows] of Object.entries(grps)){
+      if(lbl==='Unassigned' && rows.length===0) continue;
+      const autopayRowsHere = (shRecur||[]).filter(r =>
+        r.isAutopay && matchAcct(r.payFrom)===lbl && isAutopayRelevant(r.nextDue||r.qboDue)
+      );
+      const tagged = [
+        ...autopayRowsHere.map(r=>({...r,_isAutopay:true})),
+        ...rows,
+      ];
+      // Same sort approach as renderPayables: precomputed key tuple, then
+      // lexicographic comparison. Easier to verify than a multi-step
+      // inline comparator.
+      const FAR = Number.MAX_SAFE_INTEGER;
+      for(const r of tagged){
+        const isDep = r.isManual && r.kind === 'deposit';
+        const isAuto = !!r._isAutopay;
+        let bottom = false;
+        if(isAuto){
+          const ak = vkey(r.vendor, r.invRef||r.billDay, r.entity);
+          const ast = ((STATE.autopays||{})[ak]||{}).status || 'active';
+          bottom = ast === 'canceled' || ast === 'paid';
+        } else {
+          const xBill = r.isManual ? r.bill : ((STATE.rows[r.key]||{}).bill || 'none');
+          bottom = xBill === 'na' || xBill === 'excl';
+        }
+        const bucket = isDep ? 0 : bottom ? 2 : 1;
+        const dueRaw = isAuto ? effectiveDueDate(r) : (r.dueDate || '');
+        const dueParsed = parseDate(dueRaw);
+        const dueTime = dueParsed ? dueParsed.getTime() : FAR;
+        const payOnRaw = r.isManual ? (r.payOn||'') : ((STATE.rows[r.key]||{}).payOn || '');
+        const payOnParsed = parseDate(payOnRaw);
+        const payOnTime = payOnParsed ? payOnParsed.getTime() : FAR;
+        r._sortKey = [bucket, dueTime, payOnTime, String(r.vendor||'').toLowerCase()];
+      }
+      tagged.sort((a,b)=>{
+        const ka = a._sortKey, kb = b._sortKey;
+        if(ka[0] !== kb[0]) return ka[0] - kb[0];
+        if(ka[1] !== kb[1]) return ka[1] - kb[1];
+        if(ka[2] !== kb[2]) return ka[2] - kb[2];
+        return ka[3] < kb[3] ? -1 : ka[3] > kb[3] ? 1 : 0;
+      });
+
+      lines.push('━━━ Section: '+lbl+' ━━━');
+      lines.push('  #   Bckt Type           Due           Pay On        Raw due           Vendor');
+      lines.push('  ─── ──── ────────────── ───────────── ───────────── ────────────────── ──────────────────────');
+      tagged.forEach((r,i)=>{
+        const isAuto = !!r._isAutopay;
+        const isDep  = r.isManual && r.kind==='deposit';
+        const isOut  = r.isManual && r.kind==='transfer_out';
+        const type   = isAuto?'AUTOPAY':isDep?'DEPOSIT':isOut?'TRANSFER_OUT':r.isManual?'MANUAL PAY':'PAYABLE';
+        const dueRaw = isAuto ? effectiveDueDate(r) : (r.dueDate||'');
+        const dueP   = parseDate(dueRaw);
+        const due    = dueP ? (dueP.getFullYear()+'-'+String(dueP.getMonth()+1).padStart(2,'0')+'-'+String(dueP.getDate()).padStart(2,'0')) : '(no date)';
+        const payOnRaw = r.isManual ? (r.payOn||'') : ((STATE.rows[r.key]||{}).payOn||'');
+        const poP    = parseDate(payOnRaw);
+        const payOn  = poP ? (poP.getFullYear()+'-'+String(poP.getMonth()+1).padStart(2,'0')+'-'+String(poP.getDate()).padStart(2,'0')) : '—';
+        const bucket = r._sortKey ? r._sortKey[0] : '?';
+        lines.push(
+          '  '+(i+1).toString().padStart(2,' ')+'.  '+
+          String(bucket).padEnd(3,' ')+' '+
+          type.padEnd(13,' ')+' '+
+          due.padEnd(13,' ')+' '+
+          payOn.padEnd(13,' ')+' '+
+          String(dueRaw||'(empty)').padEnd(18,' ')+' '+
+          (r.vendor||'(no vendor)')
+        );
+      });
+      lines.push('');
+    }
+    const body = document.getElementById('debugModalBody');
+    body.textContent = lines.join('\n') || 'No sections to display.';
+    document.getElementById('debugModal').classList.add('open');
+  } catch(e){
+    alert('Error running sort diagnostic: '+e.message);
+  }
+}
+
+// Console debug helper: window.debugSort('Chase') prints the order each
+// payable section is rendering, with the exact dates being used for sorting.
+// Use to diagnose cases like "autopay with June due date sorting above payable
+// due in May" — the printout tells you whether the matcher saw the date the
+// way you expected.
+if(typeof window !== 'undefined'){
+  window.debugSort = function(sectionSubstring){
+    try {
+      const sub = String(sectionSubstring||'').toLowerCase();
+      const items = buildItems();
+      const grps  = groupItems(items);
+      for(const [lbl, rows] of Object.entries(grps)){
+        if(sub && !lbl.toLowerCase().includes(sub)) continue;
+        console.log('\n=== Section: '+lbl+' ===');
+        const autopayRows = (shRecur||[]).filter(r => r.isAutopay && matchAcct(r.payFrom)===lbl && isAutopayRelevant(r.nextDue||r.qboDue));
+        const tagged = [
+          ...autopayRows.map(r=>({...r,_isAutopay:true})),
+          ...rows,
+        ];
+        const annotated = tagged.map(r => {
+          const isAuto = !!r._isAutopay;
+          const isDep  = r.isManual && r.kind==='deposit';
+          const isOut  = r.isManual && r.kind==='transfer_out';
+          const dueRaw = isAuto ? effectiveDueDate(r) : (r.dueDate||'');
+          const dueParsed = parseDate(dueRaw);
+          const payOnRaw = r.isManual ? (r.payOn||'') : ((STATE.rows[r.key]||{}).payOn||'');
+          const payOnParsed = parseDate(payOnRaw);
+          return {
+            vendor: r.vendor,
+            type: isAuto?'AUTOPAY':isDep?'DEPOSIT':isOut?'TRANSFER_OUT':r.isManual?'MANUAL PAY':'PAYABLE',
+            dueRaw, dueParsed: dueParsed?dueParsed.toISOString().slice(0,10):'(unparseable)',
+            payOnRaw, payOnParsed: payOnParsed?payOnParsed.toISOString().slice(0,10):'(none)',
+          };
+        });
+        // Apply the SAME sort as renderPayables
+        annotated.sort((a,b)=>{
+          if((a.type==='DEPOSIT')!==(b.type==='DEPOSIT')) return a.type==='DEPOSIT'?-1:1;
+          const da = a.dueParsed!=='(unparseable)' ? new Date(a.dueParsed) : null;
+          const db = b.dueParsed!=='(unparseable)' ? new Date(b.dueParsed) : null;
+          if(da && db){ if(da.getTime()!==db.getTime()) return da-db; }
+          else if(da) return -1; else if(db) return 1;
+          return 0;
+        });
+        annotated.forEach((r,i)=>console.log(
+          (i+1).toString().padStart(2,' ')+'. '+r.type.padEnd(13,' ')+
+          ' due='+r.dueParsed.padEnd(13,' ')+
+          ' payOn='+r.payOnParsed.padEnd(13,' ')+
+          ' raw="'+r.dueRaw+'"'+
+          ' · '+r.vendor
+        ));
+      }
+    } catch(e){ console.error(e); }
+  };
+}
+
+// Console debug helper: window.debugBillMatch('Marc Realty') prints what the
+// matcher sees for that vendor.
+if(typeof window !== 'undefined'){
+  window.debugBillMatch = function(vendorSubstring){
+    try {
+      const items = buildItems();
+      const candidates = items.filter(i => String(i.vendor||'').toLowerCase().includes(String(vendorSubstring||'').toLowerCase()));
+      if(!candidates.length){ console.log('No AP row matches', vendorSubstring); return; }
+      for(const item of candidates){
+        console.log('---');
+        console.log('AP row:', item.vendor, '| key:', item.key, '| Amt Due:', item.amtDue, '| Inv #:', item.invRef);
+        const s = findBillSuggestion(item);
+        if(!s){ console.log('  → no suggestion'); continue; }
+        console.log('  → match kind:', s.kind, '| vendor:', s.vendor, '| inv:', s.invRef, '| amount:', s.amount, '| status:', s.status);
+        if(s.allCandidates && s.allCandidates.length){
+          console.log('  → all candidates ('+s.allCandidates.length+'):');
+          s.allCandidates.forEach((c,i)=>console.log('     ['+i+'] inv #'+(c.invRef||'(blank)')+' · $'+(c.amount||0)+' · '+(c.status||'no status')+' · '+c.vendor));
+        }
+      }
+    } catch(e){ console.error(e); }
+  };
+}
+
+// Bind a specific BILL invoice to an AP row. Used when the matcher picked
+// the wrong invoice and Juanita clicks a different candidate in the chip's
+// expandable picker.
+function setBillEntryForRow(key, vendor, invRef, amountStr, status){
+  if(!key) return;
+  if(!STATE.rows[key]) STATE.rows[key] = {};
+  const amount = parseFloat(amountStr);
+  STATE.rows[key].billEntry = {
+    vendor: vendor || '',
+    invRef: invRef || '',
+    amount: isFinite(amount) ? amount : null,
+    status: status || 'pend',
+  };
+  // Also bump the BILL Status dropdown so the row stops showing as Not in BILL.
+  if(status && status !== 'none' && status !== 'na'){
+    STATE.rows[key].bill = status;
+  }
+  saveState();
+  renderAll();
+  requestAnimationFrame(()=>{
+    const row = document.getElementById('r_'+key);
+    if(!row) return;
+    row.classList.add('row-flash');
+    try { row.scrollIntoView({behavior:'smooth', block:'center'}); } catch(e){}
+    setTimeout(()=>row.classList.remove('row-flash'), 1500);
+  });
+}
+
+function toggleBillPicker(key){
+  const wrap = document.getElementById('bp_'+key);
+  if(wrap) wrap.classList.toggle('open');
+}
+
+function useBillAmountFromSuggestion(key, amtStr){
+  if(!key) return;
+  const v = parseFloat(amtStr);
+  if(!isFinite(v)) return;
+  if(!STATE.rows[key]) STATE.rows[key]={};
+  STATE.rows[key].payAmt = v;
+  saveState();
+  renderAll();
+  requestAnimationFrame(()=>{
+    const row = document.getElementById('r_'+key);
+    if(!row) return;
+    const inp = row.querySelector('.pay-inp');
+    if(inp){ inp.classList.remove('field-unlocked'); void inp.offsetWidth; inp.classList.add('field-unlocked'); }
+    row.classList.add('row-flash');
+    try { row.scrollIntoView({behavior:'smooth', block:'center'}); } catch(e){}
+    setTimeout(()=>row.classList.remove('row-flash'), 1600);
+  });
+}
+
+// Centralizes the BILL Status dropdown change so we can layer behavior
+// (animation, re-render, focusing notes when moving a row out of aging).
+function onBillStatusChange(key, value, selectEl){
+  updRow(key, 'bill', value);
+  if(selectEl){
+    selectEl.className = 'bill-sel ' + billCls(value);
+    // Pulse the Pay Amt input briefly to draw attention to the next field
+    const row = selectEl.closest('tr');
+    if(row){
+      const inp = row.querySelector('.pay-inp');
+      if(inp){
+        inp.classList.remove('field-unlocked');
+        void inp.offsetWidth;
+        inp.classList.add('field-unlocked');
+      }
+    }
+  }
+  saveState();
+  renderAll();
+  // Excluded / N/A rows sink to the bottom on re-render. Bring the row
+  // back into view and focus the Notes field so she can immediately
+  // record the reason without hunting for the row.
+  if(value === 'excl' || value === 'na'){
+    requestAnimationFrame(()=>{
+      const row = document.getElementById('r_' + key);
+      if(!row) return;
+      try { row.scrollIntoView({behavior:'smooth', block:'center'}); } catch(e){}
+      const note = row.querySelector('.note-inp');
+      if(note){ try { note.focus(); } catch(e){} }
+      row.classList.add('row-flash');
+      setTimeout(()=>row.classList.remove('row-flash'), 1500);
+    });
+  }
+}
+
+function applyBillSuggestion(key, status){
+  if(!key || !status){ console.warn('applyBillSuggestion: missing arg', {key, status}); return; }
+  if(!STATE.rows[key]) STATE.rows[key]={};
+  STATE.rows[key].bill = status;
+  // Snapshot the matched BILL entry so the Vendor column can render
+  // BILL Total + Balance immediately. Re-fetch the suggestion against the
+  // current item (which has bill='none' until this update lands).
+  try {
+    const items = buildItems();
+    const item = items.find(it => it.key === key);
+    if(item){
+      const s = findBillSuggestion(item);
+      if(s){
+        STATE.rows[key].billEntry = {
+          vendor: s.vendor, invRef: s.invRef,
+          status: s.status, amount: s.amount, dueDate: null,
+        };
+      }
+    }
+  } catch(e){}
+  saveState();
+  renderAll();
+  // After re-render, flash the row so Juanita can see Apply took effect.
+  requestAnimationFrame(()=>{
+    const row = document.getElementById('r_'+key);
+    if(!row) return;
+    row.classList.add('row-flash');
+    try { row.scrollIntoView({behavior:'smooth', block:'center'}); } catch(e){}
+    setTimeout(()=>row.classList.remove('row-flash'), 1600);
+  });
+}
+
+function importBillCSV(){
+  const inp=document.createElement('input');
+  inp.type='file'; inp.accept='.csv';
+  inp.onchange=function(e){
+    const file=e.target.files[0]; if(!file) return;
+    const reader=new FileReader();
+    reader.onload=function(ev){
+      try {
+        const lines=ev.target.result.split(/\r?\n/).filter(l=>l.trim());
+        if(!lines.length){ alert('Empty file.'); return; }
+
+        // Parse header row — try multiple variants for each column to be
+        // resilient to BILL.com export differences and renamed templates.
+        const hdr=parseCSVLine(lines[0]).map(h=>h.toLowerCase().trim());
+        const findCol = (...candidates)=>{
+          for(const c of candidates){ const i = hdr.indexOf(c.toLowerCase()); if(i>=0) return i; }
+          return -1;
+        };
+        const col={
+          invRef:     findCol('invoice no.','invoice number','invoice #','invoice','bill no.','bill number','bill #','ref no.','ref'),
+          vendor:     findCol('vendor','vendor name','payee','payee name','name'),
+          payStatus:  findCol('payment status','pay status'),
+          apprStatus: findCol('approval status','approval','appr status'),
+          amount:     findCol('amount','bill amount','invoice amount','total','total amount','open amount','open balance','balance','amount due','amount owed'),
+          dueDate:    findCol('due date','due','date due','bill due date'),
+        };
+        if(col.payStatus<0||col.vendor<0){
+          alert('Could not find required columns (Vendor + Payment Status). Make sure you exported from BILL → All Bills or Unpaid Bills as CSV.\n\nFound columns: '+hdr.join(', '));
+          return;
+        }
+
+        // Persist a per-entry list for inline suggestions on unmatched rows.
+        // Also build lookups that return the FULL entry (not just status) so
+        // we can store the matched entry on each row and surface BILL Total
+        // and Balance inline in the Vendor/Invoice column afterward.
+        const billEntries=[];
+        const byInv={}, byVendor={}, byVendorNorm={};
+        const rank={'paid':5,'partial':4,'sched':3,'pend':2,'none':1};
+        for(let i=1;i<lines.length;i++){
+          const r=parseCSVLine(lines[i]);
+          if(!r[col.vendor]) continue;
+          const vendorRaw = String(r[col.vendor]).trim();
+          const vendorKey = vendorRaw.toLowerCase();
+          const vendorNorm= normalizeVendor(vendorRaw);
+          const invKey    = col.invRef>=0 ? String(r[col.invRef]||'').toLowerCase().trim() : '';
+          const mapped    = mapBillStatus(r[col.payStatus], r[col.apprStatus]);
+          const amount    = col.amount>=0 ? amt(r[col.amount]) : null;
+          const dueDate   = col.dueDate>=0 ? String(r[col.dueDate]||'').trim() : '';
+
+          const entry = {
+            vendor: vendorRaw, vendorNorm,
+            invRef: r[col.invRef] || '', status: mapped,
+            amount, dueDate,
+          };
+          billEntries.push(entry);
+
+          if(invKey) byInv[invKey] = entry;
+          if(!byVendor[vendorKey]    || (rank[mapped]||0)>(rank[byVendor[vendorKey]]?.status?rank[byVendor[vendorKey].status]:0))     byVendor[vendorKey]=entry;
+          if(vendorNorm && (!byVendorNorm[vendorNorm] || (rank[mapped]||0)>(rank[byVendorNorm[vendorNorm]?.status]||0))) byVendorNorm[vendorNorm]=entry;
+        }
+
+        // Build IDF map so common tokens (yip, stipend, dfss, monthly) carry
+        // less weight in fuzzy matching than distinctive ones (terra, ada, etc.)
+        const idfMap = buildBillIdfMap(billEntries);
+
+        // Persist for inline suggestions later
+        STATE.billData = { importedAt: Date.now(), entries: billEntries, idf: idfMap };
+
+        // Apply to existing rows — try in order:
+        //   (1) exact invoice # match  (strongest)
+        //   (2) exact vendor name match (case-insensitive)
+        //   (3) normalized vendor match (strips LLC/Inc/punctuation)
+        //   (4) subset-token fuzzy match  (catches "Terra Business Solutions"
+        //       ↔ "Terra Business Solutions, LLC" even if normalization differs)
+        let matched=0, fuzzyMatched=0, skipped=0;
+        const items=buildItems();
+        for(const item of items){
+          const vk=item.vendor.toLowerCase().trim();
+          const vNorm=normalizeVendor(item.vendor);
+          const ik=String(item.invRef||'').toLowerCase().trim();
+          let hitEntry = (ik&&byInv[ik]) || byVendor[vk];
+          let viaFuzzy = false;
+          if(!hitEntry && vNorm && byVendorNorm[vNorm]){ hitEntry = byVendorNorm[vNorm]; viaFuzzy = true; }
+          if(!hitEntry && vNorm){
+            // IDF-weighted subset-match fallback against billEntries
+            let bestEntry = null, bestAmtDist = Infinity;
+            const itemAmt = Math.abs(item.amtDue||0);
+            for(const e of billEntries){
+              const sim = vendorSimilarity(vNorm, e.vendorNorm, idfMap);
+              if(!sim.strong) continue;
+              const amtDist = e.amount!=null ? Math.abs(Math.abs(e.amount)-itemAmt) : Infinity;
+              if(amtDist < bestAmtDist || (amtDist===bestAmtDist && (rank[e.status]||0)>(rank[bestEntry?.status]||0))){
+                bestEntry = e; bestAmtDist = amtDist;
+              }
+            }
+            if(bestEntry){ hitEntry = bestEntry; viaFuzzy = true; }
+          }
+          if(hitEntry){
+            if(!STATE.rows[item.key]) STATE.rows[item.key]={};
+            STATE.rows[item.key].bill = hitEntry.status;
+            // Snapshot the matched BILL entry on the row so the Vendor column
+            // can show BILL Total + Balance later.
+            STATE.rows[item.key].billEntry = {
+              vendor: hitEntry.vendor, invRef: hitEntry.invRef,
+              status: hitEntry.status, amount: hitEntry.amount,
+              dueDate: hitEntry.dueDate,
+            };
+            matched++;
+            if(viaFuzzy) fuzzyMatched++;
+          } else {
+            // Clear any stale billEntry snapshot from a prior import so the
+            // Vendor column doesn't show outdated BILL data.
+            if(STATE.rows[item.key] && STATE.rows[item.key].billEntry){
+              delete STATE.rows[item.key].billEntry;
+            }
+            skipped++;
+          }
+        }
+
+        saveState();
+        renderAll();
+        const capturedAmt = col.amount>=0 ? hdr[col.amount] : null;
+        const msg = `Import complete.\n✓ ${matched} row${matched!==1?'s':''} updated`
+          +(fuzzyMatched?` (${fuzzyMatched} via normalized name match)`:``)
+          +'.'
+          +(skipped?`\n— ${skipped} row${skipped!==1?'s':''} had no direct match — check each for inline "Possible BILL match" suggestions.`:'')
+          +`\n\nCaptured columns: vendor, payment status${col.apprStatus>=0?', approval status':''}${col.invRef>=0?', invoice #':''}${capturedAmt?', amount ('+capturedAmt+')':' — NO amount column found, so BILL Total cannot be shown in suggestions'}${col.dueDate>=0?', due date':''}.`;
+        alert(msg);
+      } catch(err){
+        alert('Could not parse CSV: '+err.message);
+      }
+    };
+    reader.readAsText(file);
+  };
+  inp.click();
+}
+
+// ============================================================
+//  BOOT
+// ============================================================
+document.addEventListener('DOMContentLoaded', loadData);
+</script>
+</body>
+</html>

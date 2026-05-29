@@ -152,12 +152,30 @@ select.autopay-sel.delay { background: #fffbeb; border-color: #fcd34d; color: #9
 
 /* Pay On date input */
 input.payon-inp {
-  width: 120px; padding: 4px 6px;
+  width: 80px; padding: 4px 6px;
   border: 1px solid var(--border-2); border-radius: 4px;
   font-size: 12px; color: var(--text); background: #fff;
+  text-align: left; font-variant-numeric: tabular-nums;
+  font-family: inherit;
 }
 input.payon-inp:focus { outline: none; border-color: var(--navy-light); box-shadow: 0 0 0 2px rgba(15,52,96,0.14); }
 input.payon-inp:placeholder-shown { color: var(--text-muted); }
+input.payon-inp.date-invalid { border-color: #dc2626; background: #fef2f2; }
+/* Text date input + calendar trigger button, so the displayed value can be
+   MM/DD/YY while still offering a native picker via the icon. The flex
+   layout shrinks within the column constraint and never forces it wider. */
+.date-input-wrap {
+  display: flex; align-items: center; gap: 2px;
+  min-width: 0; max-width: 100%;
+}
+.date-input-wrap input.payon-inp { flex: 1 1 0; width: 0; min-width: 0; }
+.date-pick-btn {
+  flex-shrink: 0;
+  background: transparent; border: 0; cursor: pointer;
+  padding: 0 2px; font-size: 13px; line-height: 1; opacity: 0.6;
+  color: var(--text-2);
+}
+.date-pick-btn:hover { opacity: 1; }
 
 /* ===== ACCOUNT CARDS ===== */
 .acct-grid {
@@ -286,6 +304,11 @@ input.payon-inp:placeholder-shown { color: var(--text-muted); }
 .grp-bal-val.neg  { color: #fca5a5; }
 .grp-bal-val.warn { color: #fcd34d; }
 .grp-bal-val.pos  { color: #86efac; }
+/* Stacked Balance Today + Balance After Activity in a single column so the
+   bottom-line number sits right under the starting number — uses the vertical
+   space the Account Health description leaves on the row. */
+.grp-bal-item-stacked .grp-bal-after-lbl { margin-top: 6px; }
+.grp-bal-item-stacked .grp-bal-after-val { font-size: 16px; font-weight: 800; letter-spacing: -0.015em; }
 .grp-bal-health-item { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1 1 240px; }
 .grp-bal-health-lbl { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: rgba(255,255,255,0.45); }
 .grp-bal-health-row { display: flex; align-items: flex-start; gap: 10px; flex-wrap: wrap; min-width: 0; }
@@ -297,6 +320,48 @@ input.payon-inp:placeholder-shown { color: var(--text-muted); }
 .hdesc-label.hdesc-none   { color: rgba(255,255,255,0.5); }
 .hdesc-detail { color: #fff; }
 .pay-group.collapsed .grp-key-wrap { display: none; }
+
+/* Paid-this-cycle sticky strip — lives inside the (already sticky) section
+   header so paid rows stay visible while Juanita scrolls deep into the
+   unpaid items below. Lets her keep track of which invoices she has already
+   marked paid for a vendor with multiple bills. */
+.grp-paid-strip {
+  background: rgba(16,185,129,0.12);
+  border-top: 1px solid rgba(16,185,129,0.25);
+  padding: 7px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.grp-paid-strip .paid-strip-lbl {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #6ee7b7;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.paid-pill {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  background: rgba(16,185,129,0.20);
+  color: #d1fae5;
+  border: 1px solid rgba(16,185,129,0.35);
+  padding: 3px 9px;
+  border-radius: 11px;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.paid-pill:hover { background: rgba(16,185,129,0.30); }
+.paid-pill b { font-variant-numeric: tabular-nums; font-weight: 700; color: #fff; }
+.paid-pill .pill-inv { color: rgba(255,255,255,0.6); font-size: 10px; }
+.pay-group.collapsed .grp-paid-strip { display: none; }
 
 /* Key / legend — collapsed by default, opens via the "Show legend" button */
 .grp-key-wrap {
@@ -407,7 +472,7 @@ table.pay-tbl td:first-child { overflow: hidden; max-width: 0; }
   padding: 3px 6px; font-size: 10px; line-height: 1.35;
   color: #1a2e4a; cursor: pointer;
   border-radius: 3px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: inherit; font-variant-numeric: tabular-nums;
 }
 .vnd-bill-pick-item:hover { background: #fff7ed; color: #92400e; }
 .vnd-bill-pick-item.selected { background: #fed7aa; color: #7c2d12; font-weight: 700; }
@@ -420,7 +485,34 @@ table.pay-tbl td:first-child { overflow: hidden; max-width: 0; }
 .badge-od  { background: #fef2f2; color: #b91c1c; }
 .badge-rec { background: #e0f2fe; color: #0369a1; }
 
-.dd { font-size: 12px; line-height: 1.35; }
+.dd { font-size: 12px; line-height: 1.35; text-align: left; font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* Accounting-format cell: $ sits next to the number, both right-aligned in
+   the cell. min-width:0 + flex:1 on the input lets the input shrink to fit
+   whatever space the column gives it so it never forces the column wider. */
+.acct-cell {
+  display: flex; align-items: baseline; gap: 2px;
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  min-width: 0;
+}
+.acct-dollar { color: var(--text-2); flex-shrink: 0; }
+.acct-num { flex: 1; text-align: right; font-weight: 600; min-width: 0; white-space: nowrap; }
+input.pay-inp.acct-input {
+  flex: 1 1 0; width: 0; min-width: 0;
+  padding-left: 3px; padding-right: 3px;
+  text-align: right;
+}
+/* Muted variant for reference amounts (Amt Due) so the Pay Amt is the
+   visually prominent figure on the row. */
+.acct-cell.muted { color: var(--text-muted); }
+.acct-cell.muted .acct-num { font-weight: 400; }
+/* Force every form control inside the tables to use the body font so the
+   table reads as a single typeface. Browsers default inputs/selects to
+   their own system font which can differ subtly from the body's. */
+.pay-tbl input, .pay-tbl select, .pay-tbl textarea,
+.aq-tbl input, .aq-tbl select, .aq-tbl textarea {
+  font-family: inherit;
+}
 .dd.od   { color: var(--red); font-weight: 600; }
 .dd.soon { color: var(--amber); font-weight: 600; }
 .dd.verify { color: #92400e; font-weight: 600; }
@@ -450,7 +542,7 @@ table.pay-tbl td:nth-child(2) { width: 13%; vertical-align: top; }
 .bill-suggest.match-weak { background: #fef3c7; border-style: dashed; }
 .bill-suggest-lbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #92400e; }
 .bill-suggest-vendor { font-weight: 600; color: #1a2e4a; word-break: break-word; }
-.bill-suggest-inv { font-size: 10px; color: #4b5563; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.bill-suggest-inv { font-size: 10px; color: #4b5563; font-family: inherit; font-variant-numeric: tabular-nums; }
 .bill-suggest-howto { font-size: 9px; color: #92400e; font-style: italic; }
 .bill-suggest-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .bill-suggest-status {
@@ -969,7 +1061,7 @@ select.autopay-sel.paid    { background: #f0fdf4; border-color: #86efac; color: 
   <div id="acctBar" class="acct-bar"></div>
 
   <!-- Bank Account Cards -->
-  <div class="sec-label">Bank Accounts — Week of <span id="weekOf"></span></div>
+  <div class="sec-label">Bank Accounts — Week Ending <span id="weekEnding"></span></div>
   <div class="health-legend" id="healthLegend">
     <span class="hl-label">⚡ Runway badge:</span>
     <span class="health-badge health-green hl-ex">~8+ wks</span><span class="hl-desc"><span style="color:#065f46;font-weight:600">Healthy</span> — ample runway</span>
@@ -1002,7 +1094,7 @@ select.autopay-sel.paid    { background: #f0fdf4; border-color: #86efac; color: 
   <!-- Action Queue -->
   <div class="aq-card">
     <div class="aq-hdr">
-      <div class="aq-title">✓ Approved Cash Activity</div>
+      <div class="aq-title">Cash Movement This Week</div>
       <div class="aq-actions">
         <button class="btn btn-ghost" onclick="exportCSV()" title="Download as CSV">↓ CSV</button>
         <button class="btn btn-ghost" onclick="emailQueue()" title="Send via email">✉ Email</button>
@@ -1326,16 +1418,15 @@ function lastClearedForVendor(vendor){
 function shortAcctLabel(rawAcct){
   if(!rawAcct) return '';
   const a = String(rawAcct).toLowerCase();
+  // Keep the parenthesized account number so "Chase (8827)" can't be mistaken
+  // for "Chase CC (8442)" or vice versa.
   for(const b of BANK_ACCTS){
-    if(b.match.some(p => a.includes(p))) {
-      // Strip trailing "(####)" from the label for a cleaner inline read
-      return b.label.replace(/\s*\(\d+\)\s*$/,'').trim();
-    }
+    if(b.match.some(p => a.includes(p))) return b.label;
   }
   for(const c of CC_ACCTS){
-    if(c.match.some(p => a.includes(p))) return c.label.replace(/\s*\(\d+\)\s*$/,'').trim();
+    if(c.match.some(p => a.includes(p))) return c.label;
   }
-  return String(rawAcct).replace(/\s+\d{4,}\s*$/,'').trim();
+  return String(rawAcct).trim();
 }
 
 // Returns most-recent absolute amount from Historical Transactions for a vendor, or null
@@ -1412,6 +1503,38 @@ function acctSummary(acctLabel) {
   return { bal, avail: bal - autoTot };
 }
 
+// Balance summary for a credit-card account label — mirrors acctSummary so
+// CC sections in the payables area can show Current Balance / Credit Limit /
+// Available Credit alongside their AP rows.
+function ccAccountSummary(ccLabel) {
+  const cc = CC_ACCTS.find(c => c.label === ccLabel);
+  if (!cc) return null;
+  const sa = shAccts.find(a => cc.match.some(p => a.name.toLowerCase().includes(p)));
+  if (!sa) return null;
+  const bal = sa.bal;
+  const limit = sa.limit;
+  const avail = (bal != null && limit != null) ? limit - Math.abs(bal) : null;
+  return { bal, limit, avail };
+}
+
+// Earliest transaction date we have on file across Historical + Cleared.
+// Used in the always-on Due Date sub-text so "No transactions found" is
+// qualified with the search range Juanita's data actually covers.
+function earliestTransactionDate(){
+  let earliest = null;
+  for(const t of (shHistorical||[])){
+    if(t && t.date && (!earliest || t.date < earliest)) earliest = t.date;
+  }
+  for(const t of (shCleared||[])){
+    if(t && t.date && (!earliest || t.date < earliest)) earliest = t.date;
+  }
+  return earliest;
+}
+function noHistoryNote(){
+  const d = earliestTransactionDate();
+  return d ? `No transactions found since ${fmtDate(d)}` : 'No transaction history on file';
+}
+
 // Returns effective due date: uses raw date if present; falls back to billDay computation.
 // If cleared this month, shifts to next month.
 function effectiveDueDate(r){
@@ -1459,7 +1582,11 @@ async function loadData(){
 
     var now = new Date();
     $('hdrSub').textContent = now.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
-    $('weekOf').textContent  = now.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+    // Week-ending label = Saturday of the current Sun–Sat week, so the cutoff
+    // date is unambiguous (it isn't the same as the last-refresh date shown
+    // beneath the "Cash Position Review" header).
+    var _sat = _satOfThisWeek();
+    $('weekEnding').textContent = _sat.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
 
     if(tabErrors.length){
       setStatus('err','Some data could not load');
@@ -1515,9 +1642,12 @@ function buildItems(){
 }
 
 function groupItems(items){
-  // groups keyed by account label; maintains BANK_ACCTS order
+  // groups keyed by account label; maintains BANK_ACCTS then CC_ACCTS order
+  // so credit-card-routed payables land in their CC's section instead of
+  // falling through to a fuzzy-match bank section (or to Unassigned).
   const grps={};
   for(const a of BANK_ACCTS) grps[a.label]=[];
+  for(const c of CC_ACCTS) grps[c.label]=[];
   grps['Unassigned']=[];
 
   for(const item of items){
@@ -1569,15 +1699,13 @@ function renderCards(){
       if(!r.isAutopay) return false;
       return matchAcct(r.payFrom)===acct.label && isAutopayRelevant(r.nextDue||r.qboDue);
     });
-    const autoTot = autos.reduce((s,r)=>{
-      const k = vkey(r.vendor, r.invRef||r.billDay, r.entity);
-      const st = (STATE.autopays||{})[k]||{};
-      if(st.status==='skip'||st.status==='delay'||st.status==='canceled'||st.status==='paid') return s; // excluded
-      return s+(r.agingBal>0?r.agingBal:r.expAmt);
-    },0);
+    // Saturday-of-this-week basis: only autopays + approved items that will
+    // actually hit the account by week's end count toward Balance After Activity.
+    // Mirrors sticky bar and section header so all three numbers agree.
+    const autoTot = autoTotBySaturday(autos);
     const avail = bal!=null ? bal-autoTot : null;
 
-    // Approved items pointing to this account, split by kind:
+    // Approved items pointing to this account, split by kind, this-week only:
     //   appTot       — regular payables (AP OK TO PAY)
     //   depTot       — deposits / transfers in
     //   transOutTot  — transfers out (kept distinct from AP for cash planning)
@@ -1587,11 +1715,14 @@ function renderCards(){
       if(!st.ok) continue;
       const eff = st.acct||it.defAcct;
       if(eff!==acct.label) continue;
+      if(!isThisWeek(st.payOn||'')) continue;
       appTot += st.payAmt!=null ? st.payAmt : it.amtDue;
     }
     for(const m of (STATE.manual||[])){
       if(!m.ok||m.acct!==acct.label) continue;
       const v = parseFloat(m.payAmt)||0;
+      const dateRef = m.payOn || m.dueDate || '';
+      if(!isThisWeek(dateRef)) continue;
       if(m.kind==='deposit') depTot += v;
       else if(m.kind==='transfer_out') transOutTot += v;
       else appTot += v;
@@ -1614,7 +1745,7 @@ function renderCards(){
       <hr class="ac-divider">
       <div class="ac-rows">
         <div class="ac-row">
-          <span class="ac-row-lbl">Autopays this week</span>
+          <span class="ac-row-lbl">Autopays This Week</span>
           <span class="ac-row-val ${autoTot>0?'amber':'muted'}">${autoTot>0?'('+money(autoTot)+')':money(0)}</span>
         </div>
         <div class="ac-row">
@@ -1622,7 +1753,7 @@ function renderCards(){
           <span class="ac-row-val ${depTot>0?'green':'muted'}">${depTot>0?'+'+money(depTot):money(0)}</span>
         </div>
         <div class="ac-row">
-          <span class="ac-row-lbl">AP OK TO PAY</span>
+          <span class="ac-row-lbl">AP OK To Pay</span>
           <span class="ac-row-val ${appTot>0?'red':'muted'}">${appTot>0?'('+money(appTot)+')':money(0)}</span>
         </div>
         <div class="ac-row">
@@ -1630,7 +1761,7 @@ function renderCards(){
           <span class="ac-row-val ${transOutTot>0?'amber':'muted'}">${transOutTot>0?'('+money(transOutTot)+')':money(0)}</span>
         </div>
         <div class="ac-row final">
-          <span class="ac-row-lbl">After approved activity</span>
+          <span class="ac-row-lbl">After Approved Activity</span>
           <span class="ac-row-val ${afterApp==null?'muted':afterApp<0?'red':afterApp<500?'amber':'green'}">${afterApp!=null?money(afterApp):money(0)}</span>
         </div>
       </div>`;
@@ -1713,19 +1844,19 @@ function renderCards(){
         <hr class="ac-divider">
         <div class="ac-rows">
           <div class="ac-row">
-            <span class="ac-row-lbl">Credit limit</span>
+            <span class="ac-row-lbl">Credit Limit</span>
             <span class="ac-row-val muted">${limit!=null?money(limit):money(0)}</span>
           </div>
           <div class="ac-row">
-            <span class="ac-row-lbl">Available credit</span>
+            <span class="ac-row-lbl">Available Credit</span>
             <span class="ac-row-val ${avail==null?'muted':availCls}">${avail!=null?money(avail):money(0)}</span>
           </div>
           <div class="ac-row">
-            <span class="ac-row-lbl">AP OK TO PAY</span>
+            <span class="ac-row-lbl">AP OK To Pay</span>
             <span class="ac-row-val ${appTot>0?'red':'muted'}">${appTot>0?'('+money(appTot)+')':money(0)}</span>
           </div>
           <div class="ac-row final">
-            <span class="ac-row-lbl">After approved payments</span>
+            <span class="ac-row-lbl">After Approved Payments</span>
             <span class="ac-row-val ${afterApp==null?'muted':afterApp<0?'red':afterApp<500?'amber':'green'}">${afterApp!=null?money(afterApp):money(0)}</span>
           </div>
         </div>`;
@@ -1744,23 +1875,31 @@ function renderCards(){
       const bal = sa ? sa.bal : null;
       const balCls2 = bal!=null&&bal<0 ? 'neg' : '';
 
-      // Match the bank-tile aggregation exactly: appTot (AP), depTot, transOutTot.
+      // Match the bank-tile aggregation exactly on the Saturday-of-this-week basis:
+      // autopays hitting by Sat + this-week approved AP/transfers/deposits.
+      const autosBar = shRecur.filter(r =>
+        r.isAutopay && matchAcct(r.payFrom)===acct.label && isAutopayRelevant(r.nextDue||r.qboDue)
+      );
+      const autoTotBar = autoTotBySaturday(autosBar);
       let appTotBar = 0, depTotBar = 0, transOutBar = 0;
       for(const it of items2){
         const st = STATE.rows[it.key]||{};
         if(!st.ok) continue;
         const eff = st.acct||it.defAcct;
         if(eff !== acct.label) continue;
+        if(!isThisWeek(st.payOn||'')) continue;
         appTotBar += st.payAmt!=null ? st.payAmt : it.amtDue;
       }
       for(const m of (STATE.manual||[])){
         if(!m.ok || m.acct !== acct.label) continue;
         const v = parseFloat(m.payAmt)||0;
+        const dateRef = m.payOn || m.dueDate || '';
+        if(!isThisWeek(dateRef)) continue;
         if(m.kind==='deposit') depTotBar += v;
         else if(m.kind==='transfer_out') transOutBar += v;
         else appTotBar += v;
       }
-      const afterApp = bal!=null ? bal - appTotBar - transOutBar + depTotBar : null;
+      const afterApp = bal!=null ? bal - autoTotBar - appTotBar - transOutBar + depTotBar : null;
       const afterCls = afterApp==null ? '' : afterApp<0 ? 'red' : afterApp<500 ? 'amber' : 'green';
 
       // Every bank tile renders the same 5 metrics regardless of value so
@@ -1776,7 +1915,7 @@ function renderCards(){
           <div class="acct-bar-avail ${depTotBar>0?'green':'muted'}">${depTotBar>0?'+'+money(depTotBar):money(0)}</div>
         </div>`,
         `<div class="acct-bar-metric">
-          <div class="acct-bar-fieldlbl">AP OK to Pay</div>
+          <div class="acct-bar-fieldlbl">AP OK To Pay</div>
           <div class="acct-bar-avail ${appTotBar>0?'red':'muted'}">${appTotBar>0?'('+money(appTotBar)+')':money(0)}</div>
         </div>`,
         `<div class="acct-bar-metric">
@@ -1801,6 +1940,42 @@ function renderCards(){
 // ============================================================
 //  PAYABLES TABLE
 // ============================================================
+// Renders the balance row for a CC payables section. Mirrors the layout of
+// sectionBalRowInnerHTML so bank and CC sections look like a family, but the
+// metrics are credit-card-shaped: Available Credit / Available After Activity
+// stacked on the left, Credit Limit / Current Balance / Active Autopayments /
+// AP OK To Pay / Total Outflow following.
+function ccSectionBalRowInnerHTML(o){
+  const { cc, activeAutoTot, thisWeekApproved, totalOutflow, availAfter } = o;
+  return `
+    <div class="grp-bal-item grp-bal-item-stacked">
+      <div class="grp-bal-lbl">Available Credit</div>
+      <div class="grp-bal-val ${cc.avail!=null && cc.avail<0?'neg':''}">${cc.avail!=null?money(cc.avail):'No data'}</div>
+      <div class="grp-bal-lbl grp-bal-after-lbl">Available After Activity</div>
+      <div class="grp-bal-val grp-bal-after-val ${availAfter!=null && availAfter<0?'neg':''}">${availAfter!=null?money(availAfter):'No data'}</div>
+    </div>
+    <div class="grp-bal-item">
+      <div class="grp-bal-lbl">Credit Limit</div>
+      <div class="grp-bal-val">${cc.limit!=null?money(cc.limit):'No data'}</div>
+    </div>
+    <div class="grp-bal-item">
+      <div class="grp-bal-lbl">Current Balance</div>
+      <div class="grp-bal-val ${cc.bal!=null && cc.bal<0?'neg':''}">${cc.bal!=null?money(cc.bal):'No data'}</div>
+    </div>
+    <div class="grp-bal-item">
+      <div class="grp-bal-lbl">Active Autopayments</div>
+      <div class="grp-bal-val ${activeAutoTot>0?'warn':''}">${money(activeAutoTot)}</div>
+    </div>
+    <div class="grp-bal-item">
+      <div class="grp-bal-lbl">AP OK To Pay</div>
+      <div class="grp-bal-val ${thisWeekApproved>0?'warn':''}">${money(thisWeekApproved)}</div>
+    </div>
+    <div class="grp-bal-item">
+      <div class="grp-bal-lbl">Total Charges</div>
+      <div class="grp-bal-val ${totalOutflow>0?'warn':''}">${money(totalOutflow)}</div>
+    </div>`;
+}
+
 // Renders the inner HTML for a section's per-account balance row.
 // Shared by renderPayables (initial render) and saveAndUpdate (lightweight refresh on tick).
 function sectionBalRowInnerHTML(o){
@@ -1808,16 +1983,18 @@ function sectionBalRowInnerHTML(o){
           totalOutflow, balAfter, health, alertLabel, alertDetail, alertLabelCls } = o;
   const transOut = thisWeekTransOut || 0;
   return `
-    <div class="grp-bal-item">
+    <div class="grp-bal-item grp-bal-item-stacked">
       <div class="grp-bal-lbl">Balance Today</div>
       <div class="grp-bal-val ${summary.bal<0?'neg':''}">${money(summary.bal)}</div>
+      <div class="grp-bal-lbl grp-bal-after-lbl">Balance After Activity</div>
+      <div class="grp-bal-val grp-bal-after-val ${balAfter<0?'neg':''}">${money(balAfter)}</div>
     </div>
     <div class="grp-bal-item">
       <div class="grp-bal-lbl">Active Autopayments</div>
       <div class="grp-bal-val ${activeAutoTot>0?'warn':''}">${money(activeAutoTot)}</div>
     </div>
     <div class="grp-bal-item">
-      <div class="grp-bal-lbl">AP OK TO PAY</div>
+      <div class="grp-bal-lbl">AP OK To Pay</div>
       <div class="grp-bal-val ${thisWeekApproved>0?'warn':''}">${money(thisWeekApproved)}</div>
     </div>
     <div class="grp-bal-item">
@@ -1831,10 +2008,6 @@ function sectionBalRowInnerHTML(o){
     <div class="grp-bal-item">
       <div class="grp-bal-lbl">Total Outflow</div>
       <div class="grp-bal-val ${totalOutflow>0&&balAfter<0?'neg':totalOutflow>0?'warn':''}">${money(totalOutflow)}</div>
-    </div>
-    <div class="grp-bal-item">
-      <div class="grp-bal-lbl">Balance After Activity</div>
-      <div class="grp-bal-val ${balAfter<0?'neg':''}">${money(balAfter)}</div>
     </div>
     ${health?`
     <div class="grp-bal-health-item">
@@ -1855,7 +2028,8 @@ function renderPayables(){
 
   for(const [lbl,rows] of Object.entries(grps)){
     const isBankAcct = BANK_ACCTS.some(a=>a.label===lbl);
-    if(!isBankAcct && rows.length===0) continue;
+    const isCcAcct = CC_ACCTS.some(c=>c.label===lbl);
+    if(!isBankAcct && !isCcAcct && rows.length===0) continue;
     if(lbl==='Unassigned'&&rows.length===0) continue;
 
     let appTot=0, depTotSec=0, transOutSec=0;
@@ -1905,26 +2079,21 @@ function renderPayables(){
     const chipCls = 'grp-chip';
     const chipTxt = totalItemCount+' Outflow Item'+(totalItemCount!==1?'s':'')+' Aging'+agingThruStr;
 
-    // Active autopays total (status=active or unset)
-    const activeAutoTot = autopayRows.reduce((s,r)=>{
-      const k=vkey(r.vendor,r.invRef||r.billDay,r.entity);
-      const ast=((STATE.autopays||{})[k]||{}).status||'active';
-      if(ast!=='active') return s;
-      return s+(r.agingBal>0?r.agingBal:r.expAmt);
-    },0);
-    // Approved payables this week (pay amt > 0 AND pay-on date falls in current Mon-Sun)
+    // Active autopays total — Saturday-of-this-week basis only. Matches the
+    // bank tile, the sticky bar, and the "Slated by Sat" outflow chip below.
+    const activeAutoTot = autoTotBySaturday(autopayRows);
+    // Approved items this week. Manual items: use payOn if set, else dueDate
+    // (consistent with bank tile / sticky bar / cash-report builder).
     let thisWeekApproved=0, thisWeekDepositsIn=0, thisWeekTransOut=0;
     for(const it of rows){
       if(it.isManual){
         if(it.ok){
           const pa=parseFloat(it.payAmt)||0;
           const dateRef = it.payOn || it.dueDate || '';
-          if(it.kind==='deposit'){
-            if(pa>0 && isThisWeek(dateRef)) thisWeekDepositsIn+=pa;
-          } else if(it.kind==='transfer_out'){
-            if(pa>0 && isThisWeek(dateRef)) thisWeekTransOut+=pa;
-          } else {
-            if(pa>0 && isThisWeek(it.payOn||'')) thisWeekApproved+=pa;
+          if(pa>0 && isThisWeek(dateRef)){
+            if(it.kind==='deposit') thisWeekDepositsIn+=pa;
+            else if(it.kind==='transfer_out') thisWeekTransOut+=pa;
+            else thisWeekApproved+=pa;
           }
         }
       } else {
@@ -1975,7 +2144,8 @@ function renderPayables(){
     const div=document.createElement('div');
     const isCollapsed = !!(STATE.collapsed||{})[gid];
     div.className='pay-group'+(isCollapsed?' collapsed':''); div.id=gid;
-    const summary = acctSummary(lbl);
+    const summary = isCcAcct ? null : acctSummary(lbl);
+    const ccSum   = isCcAcct ? ccAccountSummary(lbl) : null;
     const balV = s => s!=null&&s<0?'neg':s!=null&&s<500?'warn':'';
     const health = summary ? acctHealthInfo(summary.avail, lbl) : null;
     let alertLabel='', alertDetail='', alertLabelCls='';
@@ -1993,6 +2163,35 @@ function renderPayables(){
       }
     }
     const balAfter = summary ? summary.bal - totalOutflow + thisWeekDepositsIn : null;
+    // For CC sections: "available after activity" = current available credit
+    // minus the autopays + AP being charged to the card this week.
+    const availAfter = ccSum && ccSum.avail!=null
+      ? ccSum.avail - totalOutflow + thisWeekDepositsIn
+      : null;
+
+    // Items Juanita has ticked in the ✓ Pay column. The sticky strip below
+    // the section header keeps these visible while she scrolls deep into the
+    // unticked items, so she can track which vendor-with-multiple-invoices
+    // bills she has already worked. Transfers IN (deposits) are excluded —
+    // the strip is for things being paid OUT of the account. Clicking a pill
+    // jumps to that row.
+    const tickedItemsForStrip = rows.filter(r => {
+      if(r.isManual && r.kind === 'deposit') return false;  // transfers in not shown
+      if(r.isManual) return !!r.ok;
+      return !!((STATE.rows[r.key]||{}).ok);
+    });
+    const paidStripHtml = tickedItemsForStrip.length ? `
+        <div class="grp-paid-strip">
+          <div class="paid-strip-lbl">✓ Pay (${tickedItemsForStrip.length})</div>
+          ${tickedItemsForStrip.map(it => {
+            const pa = it.isManual
+              ? (parseFloat(it.payAmt)||0)
+              : (()=>{ const st=STATE.rows[it.key]||{}; return st.payAmt!=null?st.payAmt:it.amtDue; })();
+            const targetId = it.isManual ? 'mr_'+it.id : 'r_'+it.key;
+            return `<span class="paid-pill" onclick="event.stopPropagation();scrollToRow('${targetId}')" title="Click to jump to this row">${esc(it.vendor||'(unnamed)')}${it.invRef?' <span class=\"pill-inv\">'+esc(it.invRef)+'</span>':''} <b>${money(pa)}</b></span>`;
+          }).join('')}
+        </div>` : '';
+
     div.innerHTML=`
       <div class="grp-hdr" onclick="toggleGroup('${gid}')">
         <div class="grp-hdr-main">
@@ -2003,10 +2202,12 @@ function renderPayables(){
           </div>
           <button class="grp-chevron" title="Collapse/expand" onclick="event.stopPropagation();toggleGroup('${gid}')">▾</button>
         </div>
-        ${summary ? `
+        ${(summary || ccSum) ? `
         <div class="grp-bal-row" id="${gid}_balrow">
-          ${sectionBalRowInnerHTML({summary, activeAutoTot, thisWeekApproved, thisWeekDepositsIn, thisWeekTransOut, totalOutflow, balAfter, health, alertLabel, alertDetail, alertLabelCls})}
-        </div>
+          ${ccSum
+            ? ccSectionBalRowInnerHTML({cc: ccSum, activeAutoTot, thisWeekApproved, totalOutflow, availAfter})
+            : sectionBalRowInnerHTML({summary, activeAutoTot, thisWeekApproved, thisWeekDepositsIn, thisWeekTransOut, totalOutflow, balAfter, health, alertLabel, alertDetail, alertLabelCls})}
+        </div>${paidStripHtml}
         ${(()=>{ const keyOpen = !!(STATE.keyOpen||{})[gid]; return `
         <div class="grp-key-wrap${keyOpen?' open':''}" id="${gid}_keywrap">
           <button class="grp-key-btn" onclick="event.stopPropagation();toggleGrpKey('${gid}')">
@@ -2018,11 +2219,11 @@ function renderPayables(){
       <table class="pay-tbl">
         <thead><tr>
           <th style="width:17%">Vendor / Invoice</th>
-          <th style="width:11%">Due Date</th>
+          <th style="width:11%;text-align:left">Due Date</th>
           <th style="width:13%">BILL Status</th>
-          <th style="width:7%">Amt Due</th>
-          <th style="width:9%">Pay Amt</th>
-          <th style="width:9%">Pay On</th>
+          <th style="width:7%;text-align:right">Amt Due</th>
+          <th style="width:9%;text-align:right">Pay Amt</th>
+          <th style="width:9%;text-align:left">Pay On</th>
           <th style="width:14%">Account</th>
           <th style="width:4%;text-align:center">✓ Pay</th>
           <th>💡 Notes</th>
@@ -2034,8 +2235,22 @@ function renderPayables(){
             const sun=new Date(n); sun.setDate(n.getDate()-n.getDay());
             const cutoff=new Date(sun); cutoff.setDate(sun.getDate()+6); cutoff.setHours(23,59,59,999);
 
-            // All recurring payables assigned to this section
-            const allRecur = shRecur.filter(r=>matchAcct(r.payFrom)===lbl);
+            // All recurring payables assigned to this section.
+            // Autopays stay pinned to their original payFrom — autopay is set
+            // up at the bank against a specific account, so overriding it in
+            // the planner wouldn't reflect reality.
+            // Non-autopay recurring (synthetic) rows respect the user's
+            // Account dropdown override, so a Philadelphia bill marked to be
+            // paid from Chase one week shows up in Chase instead of its
+            // default payFrom (Fifth Third).
+            const effRecurAcct = function(r){
+              const k = vkey(r.vendor, r.invRef||r.billDay||'recur', r.entity);
+              return ((STATE.rows[k]||{}).acct) || matchAcct(r.payFrom);
+            };
+            const allRecur = shRecur.filter(r => {
+              if(r.isAutopay) return matchAcct(r.payFrom) === lbl;
+              return effRecurAcct(r) === lbl;
+            });
             const nonAutopayRecur = allRecur.filter(r=>!r.isAutopay);
 
             // Vendor sets for dedup
@@ -2111,22 +2326,31 @@ function renderPayables(){
             // simple lexicographic comparator. This avoids subtle bugs from
             // multi-step inline comparators returning the wrong sign.
             //   key = [bucket, dueTime, payOnTime, vendorLower]
-            //     bucket: 0 = deposit (top), 1 = normal, 2 = bottom
+            //     bucket: 0 = deposit (top)
+            //             1 = ✓ Pay ticked (floats above the unticked working
+            //                 set so Juanita can track which invoices in a
+            //                 multi-invoice vendor she has already worked)
+            //             2 = normal unticked
+            //             3 = bottom (na/excl payable, canceled/paid autopay)
             //     dueTime / payOnTime: ms since epoch; empty → Number.MAX_SAFE_INTEGER
             const FAR = Number.MAX_SAFE_INTEGER;
             for(const r of tagged){
               const isDep = r.isManual && r.kind === 'deposit';
               const isAuto = !!r._isAutopay;
               let bottom = false;
+              let tickedTop = false;
               if(isAuto){
                 const ak = vkey(r.vendor, r.invRef||r.billDay, r.entity);
                 const ast = ((STATE.autopays||{})[ak]||{}).status || 'active';
                 bottom = ast === 'canceled' || ast === 'paid';
+                // Autopays don't use the ✓ Pay column — they deduct automatically.
               } else {
                 const xBill = r.isManual ? r.bill : ((STATE.rows[r.key]||{}).bill || 'none');
                 bottom = xBill === 'na' || xBill === 'excl';
+                const ok = r.isManual ? !!r.ok : !!((STATE.rows[r.key]||{}).ok);
+                tickedTop = ok && !bottom;  // ticked + not excluded → float to top
               }
-              const bucket = isDep ? 0 : bottom ? 2 : 1;
+              const bucket = isDep ? 0 : tickedTop ? 1 : bottom ? 3 : 2;
               const dueRaw = isAuto ? effectiveDueDate(r) : (r.dueDate || '');
               const dueParsed = parseDate(dueRaw);
               const dueTime = dueParsed ? dueParsed.getTime() : FAR;
@@ -2200,7 +2424,9 @@ function rowHTML(item, grpAcct){
   const daysPast  = isPastDue ? Math.round((today_-dueParsed)/86400000) : 0;
   const showPastDueInfo  = isPastDue && bill!=='paid' && bill!=='excl';
   const unverifiedPastDue= showPastDueInfo && !ok && bill!=='na';
-  const lastCleared = showPastDueInfo ? lastClearedForVendor(item.vendor) : null;
+  // Always look up last-cleared history — it now feeds the always-on sub-text
+  // line under every Due Date so the column is visually consistent.
+  const lastCleared = lastClearedForVendor(item.vendor);
   const lastClearedAcct = lastCleared ? shortAcctLabel(lastCleared.account) : '';
   const verifyTip = unverifiedPastDue
     ? `Due date is ${daysPast} day${daysPast===1?'':'s'} in the past and this row is not yet approved for payment.\n\n`
@@ -2279,7 +2505,20 @@ function rowHTML(item, grpAcct){
     </td>
     <td>
       <div class="dd ${ddCls}${unverifiedPastDue?' verify':''}">${fmtDate(item.dueDate)}${unverifiedPastDue?` <span class="verify-badge" title="${esc(verifyTip)}">⚠ Verify</span>`:''}</div>
-      ${showPastDueInfo?`<div class="dd-sub verify-detail">${daysPast}d past due${lastCleared?` &middot; last cleared ${fmtDate(lastCleared.date)} for ${money(Math.abs(lastCleared.amount))}${lastClearedAcct?' from '+esc(lastClearedAcct):''}`:` &middot; no prior clearing on record`}</div>`:''}
+      ${(()=>{
+        // Always render a sub-text line under the date so every cell in the
+        // column has the same visual rhythm. Three states:
+        //   - Past due (and not yet paid/excl) → amber past-due summary
+        //   - Has cleared history              → muted "Last cleared …"
+        //   - No history at all                → muted "No transactions found since [earliest date]"
+        const histTxt = lastCleared
+          ? `Last cleared ${fmtDate(lastCleared.date)} for ${money(Math.abs(lastCleared.amount))}${lastClearedAcct?' from '+esc(lastClearedAcct):''}`
+          : noHistoryNote();
+        if(showPastDueInfo){
+          return `<div class="dd-sub verify-detail">${daysPast}d past due &middot; ${lastCleared?'last cleared '+fmtDate(lastCleared.date)+' for '+money(Math.abs(lastCleared.amount))+(lastClearedAcct?' from '+esc(lastClearedAcct):''):'no prior clearing on record'}</div>`;
+        }
+        return `<div class="dd-sub">${histTxt}</div>`;
+      })()}
     </td>
     <td>
       <select class="bill-sel ${billCls}"
@@ -2311,31 +2550,39 @@ function rowHTML(item, grpAcct){
         </div>`;
       })()}
     </td>
-    <td><div class="amt-ref">${money(item.amtDue)}</div></td>
+    <td><div class="acct-cell muted"><span class="acct-dollar">$</span><span class="acct-num">${fmtComma(item.amtDue)}</span></div></td>
     <td>
-      <input type="text" class="pay-inp${mod?' mod':''}" value="${fmtN(payA)}"
-        onfocus="this.select()"
-        title="Type a number or an expression (e.g. 1000+200, 1500-50.25, 3000/2). Tab or click out to compute."
-        onchange="
-          var v=evalCalc(this.value);
-          this.value=fmtN(v);
-          updRow('${item.key}','payAmt',v);
-          this.className='pay-inp'+(Math.abs(v-${item.amtDue})>0.005?' mod':'');
-          saveAndUpdate();">
+      <div class="acct-cell">
+        <span class="acct-dollar">$</span>
+        <input type="text" class="pay-inp acct-input${mod?' mod':''}" value="${fmtN(payA)}"
+          onfocus="this.select()"
+          title="Type a number or an expression (e.g. 1000+200, 1500-50.25, 3000/2). Tab or click out to compute."
+          onchange="
+            var v=evalCalc(this.value);
+            this.value=fmtN(v);
+            updRow('${item.key}','payAmt',v);
+            this.className='pay-inp acct-input'+(Math.abs(v-${item.amtDue})>0.005?' mod':'');
+            saveAndUpdate();">
+      </div>
     </td>
     <td>
-      <input type="date" class="payon-inp" value="${toDateInput(payOn)}"
-        onchange="updRow('${item.key}','payOn',fromDateInput(this.value));saveState();">
+      <span class="date-input-wrap">
+        <input type="text" class="payon-inp" value="${payOn?fmtDate(payOn):''}" placeholder="MM/DD/YY"
+          onchange="onDateTextChange(this,'row','${item.key}','payOn',false)">
+        <button type="button" class="date-pick-btn" tabindex="-1"
+          onclick="openDatePickerForDate(this.previousElementSibling,'row','${item.key}','payOn',false)"
+          title="Open date picker">📅</button>
+      </span>
     </td>
     <td>
       <select class="acct-sel"
-        onchange="updRow('${item.key}','acct',this.value);saveState();renderAll();">
+        onchange="onAcctChange('${item.key}', this.value, false, null);">
         ${acctOpts}
       </select>
     </td>
     <td class="appr-cell">
       <input type="checkbox" class="appr-cb"${ok?' checked':''}
-        onchange="updRow('${item.key}','ok',this.checked);saveAndUpdate();">
+        onchange="onPayTickChange('${item.key}', this.checked, false, null);">
     </td>
     <td>
       <textarea class="note-inp" rows="2" placeholder="Notes…"
@@ -2386,9 +2633,15 @@ function manualRowHTML(m){
         onchange="updManual('${m.id}','invRef',this.value);saveState();">
     </td>
     <td>
-      <input type="date" class="date-inp dd ${ddCls}" value="${toDateInput(dd)}"
-        title="${datePh}"
-        onchange="updManual('${m.id}','dueDate',fromDateInput(this.value));saveState();renderAll();">
+      <span class="date-input-wrap">
+        <input type="text" class="payon-inp ${ddCls}" value="${dd?fmtDate(dd):''}" placeholder="MM/DD/YY"
+          title="${datePh}"
+          onchange="onDateTextChange(this,'manual','${m.id}','dueDate',true)">
+        <button type="button" class="date-pick-btn" tabindex="-1"
+          onclick="openDatePickerForDate(this.previousElementSibling,'manual','${m.id}','dueDate',true)"
+          title="Open date picker">📅</button>
+      </span>
+      <div class="dd-sub">${isDep?'Manual deposit entry':isOut?'Manual transfer entry':'Manual payable entry'}</div>
     </td>
     <td>
       ${isManagedKind
@@ -2400,24 +2653,32 @@ function manualRowHTML(m){
     </td>
     <td><div class="amt-ref">${amtRefHtml}</div></td>
     <td>
-      <input type="text" class="pay-inp" value="${fmtN(parseFloat(m.payAmt)||0)}"
-        onfocus="this.select()"
-        title="Type a number or an expression (e.g. 1000+200, 1500-50.25, 3000/2). Tab or click out to compute."
-        onchange="var v=evalCalc(this.value);this.value=fmtN(v);updManual('${m.id}','payAmt',v);saveAndUpdate();">
+      <div class="acct-cell">
+        <span class="acct-dollar">$</span>
+        <input type="text" class="pay-inp acct-input" value="${fmtN(parseFloat(m.payAmt)||0)}"
+          onfocus="this.select()"
+          title="Type a number or an expression (e.g. 1000+200, 1500-50.25, 3000/2). Tab or click out to compute."
+          onchange="var v=evalCalc(this.value);this.value=fmtN(v);updManual('${m.id}','payAmt',v);saveAndUpdate();">
+      </div>
     </td>
     <td>
-      <input type="date" class="payon-inp" value="${toDateInput(m.payOn||'')}"
-        onchange="updManual('${m.id}','payOn',fromDateInput(this.value));saveState();">
+      <span class="date-input-wrap">
+        <input type="text" class="payon-inp" value="${m.payOn?fmtDate(m.payOn):''}" placeholder="MM/DD/YY"
+          onchange="onDateTextChange(this,'manual','${m.id}','payOn',false)">
+        <button type="button" class="date-pick-btn" tabindex="-1"
+          onclick="openDatePickerForDate(this.previousElementSibling,'manual','${m.id}','payOn',false)"
+          title="Open date picker">📅</button>
+      </span>
     </td>
     <td>
       <select class="acct-sel"
-        onchange="updManual('${m.id}','acct',this.value);saveState();renderAll();">
+        onchange="onAcctChange(null, this.value, true, '${m.id}');">
         ${acctOpts}
       </select>
     </td>
     <td class="appr-cell">
       <input type="checkbox" class="appr-cb"${ok?' checked':''}
-        onchange="updManual('${m.id}','ok',this.checked);saveAndUpdate();">
+        onchange="onPayTickChange(null, this.checked, true, '${m.id}');">
     </td>
     <td>
       <textarea class="note-inp" rows="2" placeholder="Notes…"
@@ -2467,6 +2728,32 @@ function renderQueue(){
   const items=buildItems();
   const rows=[];
 
+  // Active autopays hitting by Saturday of the current week. Listed here so
+  // Walter (and Juanita) can see EVERY outflow planned for the week —
+  // including bills that deduct automatically — and have the chance to pause
+  // or cancel anything that shouldn't go through when cashflow is tight.
+  const sat = _satOfThisWeek();
+  for(const r of (shRecur||[])){
+    if(!r.isAutopay) continue;
+    if(!isAutopayRelevant(r.nextDue||r.qboDue)) continue;
+    const k = vkey(r.vendor, r.invRef||r.billDay, r.entity);
+    const ast = ((STATE.autopays||{})[k]||{}).status || 'active';
+    if(ast !== 'active') continue;
+    const d = parseDate(effectiveDueDate(r));
+    if(!d || d > sat) continue;
+    rows.push({
+      vendor: '⚡ AUTOPAY — '+(r.vendor||'(unnamed)'),
+      entity: r.entity||'', invRef: r.invRef||'',
+      dueDate: effectiveDueDate(r),
+      bill: 'Autopay (Active)',
+      payAmt: r.agingBal>0?r.agingBal:r.expAmt,
+      payOn: effectiveDueDate(r),
+      acct: matchAcct(r.payFrom)||r.payFrom||'',
+      note: 'Auto-deducted on Due Date',
+      isAutopay: true,
+    });
+  }
+
   for(const it of items){
     const st=STATE.rows[it.key]||{};
     if(!st.ok) continue;
@@ -2503,29 +2790,35 @@ function renderQueue(){
   }
 
   if(!rows.length){
-    $('aqBody').innerHTML='<div class="aq-empty">No payments approved yet — check ✓ Pay to build the queue.</div>';
+    $('aqBody').innerHTML='<div class="aq-empty">No activity scheduled yet — check ✓ Pay or add manual items to build the queue.</div>';
     return;
   }
 
   const trs = rows.map(r=>{
-    const bg = r.isDeposit ? '#f0fdf4' : r.isTransferOut ? '#fff7ed' : null;
-    const fg = r.isDeposit ? '#15803d' : r.isTransferOut ? '#b45309' : null;
+    const bg = r.isDeposit ? '#f0fdf4'
+             : r.isTransferOut ? '#fff7ed'
+             : r.isAutopay ? '#faf5ff'
+             : null;
+    const fg = r.isDeposit ? '#15803d'
+             : r.isTransferOut ? '#b45309'
+             : r.isAutopay ? '#6b21a8'
+             : null;
     return `<tr${bg?` style="background:${bg}"`:''}>
     <td><strong${fg?` style="color:${fg}"`:''}>${esc(r.vendor)}</strong>${r.entity?'<br><small style="color:var(--text-muted)">'+esc(r.entity)+'</small>':''}</td>
     <td>${esc(r.invRef)}</td>
-    <td>${fmtDate(r.dueDate)}</td>
+    <td style="text-align:left;font-variant-numeric:tabular-nums">${fmtDate(r.dueDate)}</td>
     <td${fg?` style="color:${fg};font-weight:600"`:''}>${esc(r.bill)}</td>
-    <td style="font-weight:600;text-align:right${fg?`;color:${fg}`:''}">${r.isDeposit?'+':''}${money(r.payAmt)}</td>
-    <td>${r.payOn ? fmtDate(r.payOn) : '—'}</td>
+    <td><div class="acct-cell"${fg?` style="color:${fg};font-weight:600"`:'style="font-weight:600"'}><span class="acct-dollar"${fg?` style="color:${fg}"`:''}>$</span><span class="acct-num">${fmtComma(r.payAmt)}</span></div></td>
+    <td style="text-align:left;font-variant-numeric:tabular-nums">${r.payOn ? fmtDate(r.payOn) : '—'}</td>
     <td>${esc(r.acct)}</td>
     <td style="color:var(--text-2);font-size:12px">${esc(r.note)}</td>
   </tr>`;}).join('');
 
   $('aqBody').innerHTML=`<table class="aq-tbl">
     <thead><tr>
-      <th>Vendor</th><th>Invoice</th><th>Due Date</th>
+      <th>Vendor</th><th>Invoice</th><th style="text-align:left">Due Date</th>
       <th>BILL Status</th><th style="text-align:right">Pay Amt</th>
-      <th>Pay On</th><th>Account</th><th>Notes</th>
+      <th style="text-align:left">Pay On</th><th>Account</th><th>Notes</th>
     </tr></thead>
     <tbody>${trs}</tbody>
   </table>`;
@@ -2645,27 +2938,26 @@ function saveAndUpdate(){
     const balRow = $(gid+'_balrow');
     if(balRow){
       const summary = acctSummary(lbl);
-      if(summary){
+      const ccSum   = ccAccountSummary(lbl);
+      if(summary || ccSum){
         const autopayRowsHdr = (shRecur||[]).filter(r =>
           r.isAutopay && matchAcct(r.payFrom)===lbl && isAutopayRelevant(r.nextDue||r.qboDue)
         );
-        const activeAutoTot = autopayRowsHdr.reduce((s,r)=>{
-          const ak=vkey(r.vendor,r.invRef||r.billDay,r.entity);
-          const ast=((STATE.autopays||{})[ak]||{}).status||'active';
-          if(ast!=='active') return s;
-          return s+(r.agingBal>0?r.agingBal:r.expAmt);
-        },0);
+        // Saturday-of-this-week basis — same as renderPayables and bank tile
+        const activeAutoTot = autoTotBySaturday(autopayRowsHdr);
+        // Manual items: use payOn if set, else dueDate — same rule as the
+        // bank tile, sticky bar, renderPayables, and the cash-report builder.
         let thisWeekApproved=0, thisWeekDepositsIn=0, thisWeekTransOut=0;
         for(const it of rows){
           if(it.isManual){
             if(it.ok){
               const pa=parseFloat(it.payAmt)||0;
               const dateRef = it.payOn || it.dueDate || '';
-              if(it.kind==='deposit'){
-                if(pa>0 && isThisWeek(dateRef)) thisWeekDepositsIn+=pa;
-              } else if(it.kind==='transfer_out'){
-                if(pa>0 && isThisWeek(dateRef)) thisWeekTransOut+=pa;
-              } else if(pa>0 && isThisWeek(it.payOn||'')) thisWeekApproved+=pa;
+              if(pa>0 && isThisWeek(dateRef)){
+                if(it.kind==='deposit') thisWeekDepositsIn+=pa;
+                else if(it.kind==='transfer_out') thisWeekTransOut+=pa;
+                else thisWeekApproved+=pa;
+              }
             }
           } else {
             const st2=STATE.rows[it.key]||{};
@@ -2673,20 +2965,25 @@ function saveAndUpdate(){
           }
         }
         const totalOutflow = activeAutoTot + thisWeekApproved + thisWeekTransOut;
-        const balAfter = summary.bal - totalOutflow + thisWeekDepositsIn;
-        const health = acctHealthInfo(summary.avail, lbl);
-        let alertLabel='', alertDetail='', alertLabelCls='';
-        if(health){
-          if(summary.bal<0){ alertLabel='Overdrawn'; alertDetail='deposit or transfer needed before next autopay.'; alertLabelCls='hdesc-red'; }
-          else if(health.cls==='health-red'){ alertLabel='Critical'; alertDetail='available balance covers less than 1 week of outflows.'; alertLabelCls='hdesc-red'; }
-          else if(health.cls==='health-amber'){ alertLabel='Watch'; alertDetail='available balance covers limited weeks at current spend rate.'; alertLabelCls='hdesc-amber'; }
-          else if(health.cls==='health-green'){ alertLabel='Healthy'; alertDetail='runway is adequate at current spend rate.'; alertLabelCls='hdesc-green'; }
-          else { alertLabel='No data'; alertDetail='no cleared transaction history on file — runway cannot be calculated.'; alertLabelCls='hdesc-none'; }
+        if(ccSum){
+          const availAfter = ccSum.avail!=null ? ccSum.avail - totalOutflow + thisWeekDepositsIn : null;
+          balRow.innerHTML = ccSectionBalRowInnerHTML({cc: ccSum, activeAutoTot, thisWeekApproved, totalOutflow, availAfter});
+        } else {
+          const balAfter = summary.bal - totalOutflow + thisWeekDepositsIn;
+          const health = acctHealthInfo(summary.avail, lbl);
+          let alertLabel='', alertDetail='', alertLabelCls='';
+          if(health){
+            if(summary.bal<0){ alertLabel='Overdrawn'; alertDetail='deposit or transfer needed before next autopay.'; alertLabelCls='hdesc-red'; }
+            else if(health.cls==='health-red'){ alertLabel='Critical'; alertDetail='available balance covers less than 1 week of outflows.'; alertLabelCls='hdesc-red'; }
+            else if(health.cls==='health-amber'){ alertLabel='Watch'; alertDetail='available balance covers limited weeks at current spend rate.'; alertLabelCls='hdesc-amber'; }
+            else if(health.cls==='health-green'){ alertLabel='Healthy'; alertDetail='runway is adequate at current spend rate.'; alertLabelCls='hdesc-green'; }
+            else { alertLabel='No data'; alertDetail='no cleared transaction history on file — runway cannot be calculated.'; alertLabelCls='hdesc-none'; }
+          }
+          balRow.innerHTML = sectionBalRowInnerHTML({
+            summary, activeAutoTot, thisWeekApproved, thisWeekDepositsIn, thisWeekTransOut,
+            totalOutflow, balAfter, health, alertLabel, alertDetail, alertLabelCls
+          });
         }
-        balRow.innerHTML = sectionBalRowInnerHTML({
-          summary, activeAutoTot, thisWeekApproved, thisWeekDepositsIn, thisWeekTransOut,
-          totalOutflow, balAfter, health, alertLabel, alertDetail, alertLabelCls
-        });
       }
     }
   }
@@ -2719,19 +3016,651 @@ function exportCSV(){
 }
 
 // ============================================================
-//  PDF EXPORT
+//  CASH POSITION REPORT — shared by Email + Print/PDF
+//  One source of truth so the numbers in the email, the PDF,
+//  and the on-screen tile/section header always agree.
+// ============================================================
+function buildCashReport(){
+  // Week boundaries — Sunday start, Saturday end (matches isThisWeek)
+  const sat = _satOfThisWeek();
+  const sun = new Date(sat); sun.setDate(sat.getDate()-6); sun.setHours(0,0,0,0);
+  const fmtMMDDYY = d => String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getDate()).padStart(2,'0')+'/'+String(d.getFullYear()).slice(-2);
+  // BILL Status display helpers — Walter scans each AP row and sees whether
+  // the bill is actually clear to pay in BILL.com. "Pending Appr" or "On Hold"
+  // means the row is OK TO PAY here but BILL.com is blocking the actual
+  // payment until the status changes.
+  const billLbl = function(v){ const o=BILL_OPTS.find(x=>x.v===v); return o?o.lbl:(v||'—'); };
+  const billColor = function(v){
+    if(v==='pend')    return '#92400e';
+    if(v==='hold')    return '#991b1b';
+    if(v==='none')    return '#475569';
+    if(v==='sched')   return '#1e40af';
+    if(v==='partial') return '#9a3412';
+    if(v==='paid')    return '#166534';
+    return '#64748b';
+  };
+  const billBg = function(v){
+    if(v==='pend')    return '#fef3c7';
+    if(v==='hold')    return '#fee2e2';
+    if(v==='none')    return '#f1f5f9';
+    if(v==='sched')   return '#dbeafe';
+    if(v==='partial') return '#ffedd5';
+    if(v==='paid')    return '#dcfce7';
+    return '#f1f5f9';
+  };
+  const items = buildItems();
+  const grps = groupItems(items);
+  const sunStr = fmtMMDDYY(sun);
+  const satStr = fmtMMDDYY(sat);
+  const weekRange = 'Sun '+sunStr+' – Sat '+satStr;
+  const report = {
+    sunStr, satStr, weekRange,
+    bankAccounts: [],
+    ccAccounts: [],
+    grandTotals: {autopayOut:0, apOut:0, transOut:0, depIn:0, ccAp:0, upcomingAuto:0},
+  };
+
+  for(const acct of BANK_ACCTS){
+    const sa = shAccts.find(a => acct.match.some(p => a.name.toLowerCase().includes(p)));
+    const startBal = sa ? sa.bal : null;
+    const allAutos = shRecur.filter(r =>
+      r.isAutopay && matchAcct(r.payFrom)===acct.label && isAutopayRelevant(r.nextDue||r.qboDue)
+    );
+    // autopays = hits this week (Sun–Sat), counted in ending balance
+    // upcomingAutopays = active autopays beyond this Saturday but in the
+    //   14-day relevance window, listed as a heads-up so Walter can plan
+    //   transfers before they hit. NOT included in this week's ending balance.
+    const autopays = [], upcomingAutopays = [];
+    for(const r of allAutos){
+      const k = vkey(r.vendor, r.invRef||r.billDay, r.entity);
+      const ast = ((STATE.autopays||{})[k]||{}).status||'active';
+      if(ast!=='active') continue;
+      const d = parseDate(effectiveDueDate(r));
+      const entry = {
+        vendor: r.vendor,
+        dateStr: d ? fmtDate(effectiveDueDate(r)) : 'Date TBD',
+        amount: r.agingBal>0?r.agingBal:r.expAmt,
+        sortMs: d ? d.getTime() : Number.MAX_SAFE_INTEGER,
+      };
+      if(!d){
+        // No date — show as upcoming heads-up so Walter sees it exists
+        upcomingAutopays.push(entry);
+      } else if(d <= sat){
+        autopays.push(entry);
+      } else {
+        upcomingAutopays.push(entry);
+      }
+    }
+    autopays.sort((a,b)=>a.sortMs-b.sortMs);
+    upcomingAutopays.sort((a,b)=>a.sortMs-b.sortMs);
+    const ap=[], transfersOut=[], deposits=[];
+    const rows = grps[acct.label] || [];
+    for(const it of rows){
+      if(it.isManual){
+        if(!it.ok) continue;
+        const pa = parseFloat(it.payAmt)||0;
+        if(pa<=0) continue;
+        const dateRef = it.payOn || it.dueDate || '';
+        if(!isThisWeek(dateRef)) continue;
+        const baseEntry = {vendor: it.vendor||'(unnamed)', invRef: it.invRef||'', dateStr: fmtDate(dateRef), amount: pa, note: it.note||''};
+        if(it.kind==='deposit') deposits.push(baseEntry);
+        else if(it.kind==='transfer_out') transfersOut.push(baseEntry);
+        else {
+          const bs = it.bill || 'none';
+          ap.push(Object.assign(baseEntry, {billStatus: bs, billStatusLbl: billLbl(bs), billStatusColor: billColor(bs), billStatusBg: billBg(bs)}));
+        }
+      } else {
+        const st = STATE.rows[it.key]||{};
+        if(!st.ok) continue;
+        const pa = st.payAmt!=null?st.payAmt:it.amtDue;
+        if(pa<=0) continue;
+        if(!isThisWeek(st.payOn||'')) continue;
+        const bs = st.bill || 'none';
+        ap.push({vendor: it.vendor, invRef: it.invRef||'', dateStr: fmtDate(st.payOn||''), amount: pa, note: st.note||'', billStatus: bs, billStatusLbl: billLbl(bs), billStatusColor: billColor(bs), billStatusBg: billBg(bs)});
+      }
+    }
+    const autoTot = autopays.reduce((s,x)=>s+x.amount,0);
+    const apTot = ap.reduce((s,x)=>s+x.amount,0);
+    const transOutTot = transfersOut.reduce((s,x)=>s+x.amount,0);
+    const depTot = deposits.reduce((s,x)=>s+x.amount,0);
+    const upcomingAutoTot = upcomingAutopays.reduce((s,x)=>s+x.amount,0);
+    const endBal = startBal!=null ? startBal - autoTot - apTot - transOutTot + depTot : null;
+    // Transfer-needed flag: ending balance below this triggers a callout so
+    // Walter sees at a glance that money needs to be moved into the account.
+    const lowBalThreshold = 500;
+    let transferNeeded = null;
+    if(endBal != null && endBal < lowBalThreshold){
+      transferNeeded = Math.max(lowBalThreshold - endBal, -endBal);
+    }
+    report.bankAccounts.push({
+      label: acct.label, startBal, endBal,
+      autopays, ap, transfersOut, deposits,
+      upcomingAutopays, upcomingAutoTot,
+      autoTot, apTot, transOutTot, depTot,
+      transferNeeded
+    });
+    report.grandTotals.autopayOut += autoTot;
+    report.grandTotals.apOut += apTot;
+    report.grandTotals.transOut += transOutTot;
+    report.grandTotals.depIn += depTot;
+    report.grandTotals.upcomingAuto += upcomingAutoTot;
+  }
+
+  for(const cc of CC_ACCTS){
+    const sa = shAccts.find(a => cc.match.some(p => a.name.toLowerCase().includes(p)));
+    const startBal = sa ? sa.bal : null;
+    const limit = sa ? sa.limit : null;
+    const startAvail = (startBal!=null && limit!=null) ? limit - Math.abs(startBal) : null;
+    const ap = [];
+    for(const it of items){
+      const st = STATE.rows[it.key]||{};
+      if(!st.ok) continue;
+      const eff = st.acct||it.defAcct;
+      if(eff !== cc.label) continue;
+      const pa = st.payAmt!=null?st.payAmt:it.amtDue;
+      if(pa<=0) continue;
+      if(!isThisWeek(st.payOn||'')) continue;
+      const bs = st.bill || 'none';
+      ap.push({vendor: it.vendor, invRef: it.invRef||'', dateStr: fmtDate(st.payOn||''), amount: pa, note: st.note||'', billStatus: bs, billStatusLbl: billLbl(bs), billStatusColor: billColor(bs), billStatusBg: billBg(bs)});
+    }
+    for(const m of (STATE.manual||[])){
+      if(!m.ok || m.acct !== cc.label) continue;
+      if(m.kind==='transfer_out' || m.kind==='deposit') continue;
+      const pa = parseFloat(m.payAmt)||0;
+      if(pa<=0) continue;
+      const dateRef = m.payOn || m.dueDate || '';
+      if(!isThisWeek(dateRef)) continue;
+      const bs = m.bill || 'none';
+      ap.push({vendor: m.vendor||'(unnamed)', invRef: m.invRef||'', dateStr: fmtDate(dateRef), amount: pa, note: m.note||'', billStatus: bs, billStatusLbl: billLbl(bs), billStatusColor: billColor(bs), billStatusBg: billBg(bs)});
+    }
+    const apTot = ap.reduce((s,x)=>s+x.amount,0);
+    const endAvail = startAvail!=null ? startAvail - apTot : null;
+    report.ccAccounts.push({label: cc.label, startBal, startAvail, endAvail, limit, ap, apTot});
+    report.grandTotals.ccAp += apTot;
+  }
+
+  return report;
+}
+
+function reportAsText(report){
+  const wk = report.weekRange; // "Sun M/D/YY – Sat M/D/YY"
+  const out = [];
+  out.push('MMI Cash Position Review');
+  out.push('Week of '+wk);
+  out.push('');
+  for(const a of report.bankAccounts){
+    const hasActivity = a.autopays.length || a.ap.length || a.transfersOut.length || a.deposits.length;
+    out.push('==================================');
+    out.push(a.label.toUpperCase());
+    out.push('==================================');
+    out.push('Starting balance: ' + (a.startBal!=null?money(a.startBal):'No data'));
+    if(!hasActivity && !a.upcomingAutopays.length){
+      out.push('  (no activity scheduled this week)');
+      out.push('Ending balance: ' + (a.endBal!=null?money(a.endBal):'—'));
+      out.push('');
+      continue;
+    }
+    if(a.autopays.length){
+      out.push('');
+      out.push('AUTOPAYS this week ('+wk+'):');
+      a.autopays.forEach(x => out.push('  - '+x.vendor+' — '+x.dateStr+' — ('+money(x.amount)+')'));
+      out.push('  Autopay subtotal: ('+money(a.autoTot)+')');
+    }
+    if(a.ap.length){
+      out.push('');
+      out.push('APPROVED PAYABLES this week ('+wk+'):');
+      a.ap.forEach(x => out.push('  - '+x.vendor+(x.invRef?' '+x.invRef:'')+' — Pay '+x.dateStr+' — ('+money(x.amount)+')   BILL: '+(x.billStatusLbl||'—')+(x.note?'  ['+x.note+']':'')));
+      out.push('  Payables subtotal: ('+money(a.apTot)+')');
+    }
+    if(a.transfersOut.length){
+      out.push('');
+      out.push('>> TRANSFERS OUT this week ('+wk+') — WALTER TO EXECUTE TRANSFERS FROM THIS ACCOUNT:');
+      a.transfersOut.forEach(x => out.push('  - '+x.vendor+' — '+x.dateStr+' — ('+money(x.amount)+')'+(x.note?'  ['+x.note+']':'')));
+      out.push('  Transfers-out subtotal: ('+money(a.transOutTot)+')');
+      out.push('  Note: Money leaves THIS account and lands in another MMI account. Walter');
+      out.push('  initiates these transfers. The matching inflow appears under "Transfers in');
+      out.push('  + Deposits" of the receiving account.');
+    }
+    if(a.deposits.length){
+      out.push('');
+      out.push('>> TRANSFERS IN + DEPOSITS this week ('+wk+') — WALTER TO EXECUTE TRANSFERS INTO THIS ACCOUNT:');
+      a.deposits.forEach(x => out.push('  - '+x.vendor+' — '+x.dateStr+' — +'+money(x.amount)+(x.note?'  ['+x.note+']':'')));
+      out.push('  Transfers in + Deposits subtotal: +'+money(a.depTot));
+      out.push('  Note: Items above are transfers from other MMI accounts (Walter to initiate)');
+      out.push('  and/or external deposits that arrive on their own. The ENDING BALANCE below');
+      out.push('  assumes ALL of these land this week.');
+    }
+    if(hasActivity){
+      const netChange = -a.autoTot - a.apTot - a.transOutTot + a.depTot;
+      out.push('');
+      out.push('Net change this week: '+(netChange>=0?'+':'')+money(netChange));
+    }
+    out.push('ENDING BALANCE (after this week, assuming all transfers/deposits land): ' + (a.endBal!=null?money(a.endBal):'—'));
+    if(a.transferNeeded != null){
+      if(a.depTot > 0){
+        out.push('>> ADDITIONAL TRANSFER NEEDED: bring in ~'+money(a.transferNeeded)+' ON TOP OF the transfers/deposits listed above to keep a working buffer');
+      } else {
+        out.push('>> TRANSFER NEEDED: bring in ~'+money(a.transferNeeded)+' to cover this week and keep a working buffer');
+      }
+    }
+    if(a.upcomingAutopays.length){
+      out.push('');
+      out.push('HEADS-UP — upcoming autopays AFTER Sat '+report.satStr+' (within ~14 days):');
+      a.upcomingAutopays.forEach(x => out.push('  - '+x.vendor+' — '+x.dateStr+' — ('+money(x.amount)+')'));
+      out.push('  Upcoming autopay total: ('+money(a.upcomingAutoTot)+')');
+      out.push('  Note: not included in this week\'s ending balance — heads-up only');
+    }
+    out.push('');
+  }
+  const ccsActive = report.ccAccounts.filter(c => c.ap.length);
+  for(const c of ccsActive){
+    out.push('==================================');
+    out.push(c.label.toUpperCase());
+    out.push('==================================');
+    out.push('Current balance: '+(c.startBal!=null?money(c.startBal):'No data'));
+    if(c.limit!=null) out.push('Credit limit: '+money(c.limit));
+    if(c.startAvail!=null) out.push('Available before activity: '+money(c.startAvail));
+    out.push('');
+    out.push('APPROVED PAYABLES this week ('+wk+'):');
+    c.ap.forEach(x => out.push('  - '+x.vendor+(x.invRef?' '+x.invRef:'')+' — Pay '+x.dateStr+' — ('+money(x.amount)+')   BILL: '+(x.billStatusLbl||'—')+(x.note?'  ['+x.note+']':'')));
+    out.push('  Payables subtotal: ('+money(c.apTot)+')');
+    if(c.endAvail!=null){ out.push(''); out.push('Available after activity: '+money(c.endAvail)); }
+    out.push('');
+  }
+  out.push('==================================');
+  out.push('GRAND TOTALS — BANK IMPACT THIS WEEK');
+  out.push('==================================');
+  const g = report.grandTotals;
+  out.push('Autopay outflow (this week):     ('+money(g.autopayOut)+')');
+  out.push('Approved AP outflow:             ('+money(g.apOut)+')');
+  out.push('Transfers out:                   ('+money(g.transOut)+')   ← Walter to execute transfers OUT');
+  out.push('Transfers in + Deposits:         +'+money(g.depIn)+'   ← Walter to execute transfers IN');
+  if(g.ccAp>0) out.push('AP charged to CCs:            ('+money(g.ccAp)+')  [does not affect bank cash]');
+  const grandNet = -g.autopayOut - g.apOut - g.transOut + g.depIn;
+  out.push('Net bank impact this week:    '+(grandNet>=0?'+':'')+money(grandNet));
+  if(g.upcomingAuto > 0){
+    out.push('');
+    out.push('Heads-up — upcoming autopays after Sat '+report.satStr+': ('+money(g.upcomingAuto)+')');
+  }
+  return out.join('\n');
+}
+
+function reportAsHTML(report){
+  const accountSection = function(a, isCc){
+    if(isCc && !a.ap.length) return '';
+    const hasActivity = isCc ? a.ap.length : (a.autopays.length || a.ap.length || a.transfersOut.length || a.deposits.length);
+    let html = '<section class="acct"><h2>'+esc(a.label)+'</h2>';
+    if(isCc){
+      html += '<p class="bal-line">Current balance: <b>'+(a.startBal!=null?money(a.startBal):'No data')+'</b>';
+      if(a.limit!=null) html += ' &nbsp;·&nbsp; Credit limit: '+money(a.limit);
+      if(a.startAvail!=null) html += ' &nbsp;·&nbsp; Available before: <b>'+money(a.startAvail)+'</b>';
+      html += '</p>';
+    } else {
+      html += '<p class="bal-line">Starting balance: <b>'+(a.startBal!=null?money(a.startBal):'No data')+'</b></p>';
+    }
+    if(!hasActivity && !(isCc) && !a.upcomingAutopays.length){
+      html += '<p class="empty">(no activity scheduled this week)</p>';
+    } else if(!hasActivity && isCc){
+      html += '<p class="empty">(no activity scheduled this week)</p>';
+    }
+    // lineGroup builds a labeled line-item table with an explicit, descriptive
+    // subtotal label (Autopay subtotal, Payables subtotal, etc.) so each
+    // running total is unambiguous in the report.
+    const lineGroup = function(title, list, isInflow, subtotalLabel, dateLabel){
+      if(!list.length) return '';
+      const subtotal = list.reduce(function(s,x){return s+x.amount;},0);
+      const amtLabel = isInflow ? 'Amount In' : 'Amount Out';
+      let g = '<div class="grp"><h3>'+esc(title)+'</h3><table>';
+      g += '<thead><tr class="col-hdr"><th>Vendor / Invoice</th><th class="date-hdr">'+esc(dateLabel||'Date')+'</th><th class="amt-hdr">'+esc(amtLabel)+'</th></tr></thead>';
+      list.forEach(function(x){
+        const billBadge = x.billStatus
+          ? ' <span style="display:inline-block;font-size:9px;font-weight:700;color:'+x.billStatusColor+';background:'+x.billStatusBg+';padding:1px 6px;border-radius:8px;margin-left:4px;letter-spacing:0.03em;text-transform:uppercase;">BILL: '+esc(x.billStatusLbl)+'</span>'
+          : '';
+        g += '<tr><td>'+esc(x.vendor)+(x.invRef?' <span class="inv">'+esc(x.invRef)+'</span>':'')+billBadge+'</td>'+
+             '<td class="date">'+esc(x.dateStr)+'</td>'+
+             '<td class="amt '+(isInflow?'pos':'neg')+'">'+(isInflow?'+':'(')+money(x.amount)+(isInflow?'':')')+'</td></tr>';
+        if(x.note) g += '<tr class="note-row"><td colspan="3"><span class="note">'+esc(x.note)+'</span></td></tr>';
+      });
+      g += '<tr class="sub"><td>'+esc(subtotalLabel)+'</td><td></td><td class="amt '+(isInflow?'pos':'neg')+'">'+(isInflow?'+':'(')+money(subtotal)+(isInflow?'':')')+'</td></tr>';
+      g += '</table></div>';
+      return g;
+    };
+    if(!isCc){
+      const wk = report.weekRange;
+      html += lineGroup('Autopays this week ('+wk+')', a.autopays, false, 'Autopay subtotal', 'Hits On');
+      html += lineGroup('Approved payables this week ('+wk+')', a.ap, false, 'Payables subtotal', 'Pay On');
+      // Transfers OUT — highlighted because Walter has to initiate these
+      // from THIS account into another MMI account. Same treatment as
+      // Transfers In so both sides of a transfer are visually paired.
+      if(a.transfersOut.length){
+        html += '<div class="grp outflow-grp"><h3>⬆ Transfers out this week ('+esc(wk)+') &nbsp;·&nbsp; <span class="walter-action walter-action-out">Walter to execute transfers FROM this account</span></h3><table>';
+        html += '<thead><tr class="col-hdr"><th>Vendor / Destination</th><th class="date-hdr">Send On</th><th class="amt-hdr">Amount Out</th></tr></thead>';
+        a.transfersOut.forEach(function(x){
+          html += '<tr><td>'+esc(x.vendor)+'</td><td class="date">'+esc(x.dateStr)+'</td><td class="amt neg">('+money(x.amount)+')</td></tr>';
+          if(x.note) html += '<tr class="note-row"><td colspan="3"><span class="note">'+esc(x.note)+'</span></td></tr>';
+        });
+        html += '<tr class="sub"><td>Transfers-out subtotal</td><td></td><td class="amt neg">('+money(a.transOutTot)+')</td></tr>';
+        html += '</table><p class="outflow-note">Money leaves THIS account and lands in another MMI account. Walter initiates these transfers — the matching inflow appears under "Transfers in + Deposits" of the receiving account.</p></div>';
+      }
+      // Inflow section is highlighted so Walter sees the transfers he needs
+      // to execute INTO this account. The ending balance below assumes these all land.
+      if(a.deposits.length){
+        html += '<div class="grp inflow-grp"><h3>⬇ Transfers in + Deposits this week ('+esc(wk)+') &nbsp;·&nbsp; <span class="walter-action">Walter to execute transfers INTO this account</span></h3><table>';
+        html += '<thead><tr class="col-hdr"><th>Vendor / Source</th><th class="date-hdr">Arrives</th><th class="amt-hdr">Amount In</th></tr></thead>';
+        a.deposits.forEach(function(x){
+          html += '<tr><td>'+esc(x.vendor)+'</td><td class="date">'+esc(x.dateStr)+'</td><td class="amt pos">+'+money(x.amount)+'</td></tr>';
+          if(x.note) html += '<tr class="note-row"><td colspan="3"><span class="note">'+esc(x.note)+'</span></td></tr>';
+        });
+        html += '<tr class="sub"><td>Transfers in + Deposits subtotal</td><td></td><td class="amt pos">+'+money(a.depTot)+'</td></tr>';
+        html += '</table><p class="inflow-note">Items above are transfers from other MMI accounts (Walter initiates) and/or external deposits that arrive on their own. The ENDING BALANCE below assumes ALL of these land this week.</p></div>';
+      }
+    } else if(a.ap.length){
+      html += lineGroup('Approved payables this week ('+report.weekRange+')', a.ap, false, 'Payables subtotal', 'Pay On');
+    }
+    if(isCc){
+      if(a.endAvail!=null) html += '<p class="end">Available after activity: <b class="'+(a.endAvail<0?'neg':'')+'">'+money(a.endAvail)+'</b></p>';
+    } else {
+      if(hasActivity){
+        const netChange = -a.autoTot - a.apTot - a.transOutTot + a.depTot;
+        html += '<p class="net">Net change this week: <b class="'+(netChange<0?'neg':'pos')+'">'+(netChange>=0?'+':'')+money(netChange)+'</b></p>';
+      }
+      html += '<p class="end">ENDING BALANCE (after this week, assuming all transfers/deposits land): <b class="'+(a.endBal!=null&&a.endBal<0?'neg':'')+'">'+(a.endBal!=null?money(a.endBal):'—')+'</b></p>';
+      if(a.transferNeeded != null){
+        if(a.depTot > 0){
+          html += '<p class="transfer-needed">⚠ ADDITIONAL TRANSFER NEEDED: bring in ~<b>'+money(a.transferNeeded)+'</b> ON TOP OF the transfers/deposits listed above to keep a working buffer.</p>';
+        } else {
+          html += '<p class="transfer-needed">⚠ TRANSFER NEEDED: bring in ~<b>'+money(a.transferNeeded)+'</b> to cover this week and keep a working buffer.</p>';
+        }
+      }
+      if(a.upcomingAutopays.length){
+        html += '<div class="grp upcoming-grp"><h3>Heads-up — upcoming autopays AFTER Sat '+esc(report.satStr)+' (within ~14 days)</h3><table>';
+        html += '<thead><tr class="col-hdr"><th>Vendor</th><th class="date-hdr">Hits On</th><th class="amt-hdr">Amount Out</th></tr></thead>';
+        a.upcomingAutopays.forEach(function(x){
+          html += '<tr><td>'+esc(x.vendor)+'</td><td class="date">'+esc(x.dateStr)+'</td><td class="amt neg">('+money(x.amount)+')</td></tr>';
+        });
+        html += '<tr class="sub"><td>Upcoming autopay total</td><td></td><td class="amt neg">('+money(a.upcomingAutoTot)+')</td></tr>';
+        html += '</table><p class="upcoming-note">Not included in this week\'s ending balance — heads-up only.</p></div>';
+      }
+    }
+    html += '</section>';
+    return html;
+  };
+
+  let html = '<!doctype html><html><head><meta charset="utf-8"><title>MMI Cash Position Review — '+esc(report.weekRange)+'</title>'+
+'<style>'+
+'* { box-sizing: border-box; }'+
+'body { font: 11px/1.4 -apple-system, system-ui, "Segoe UI", sans-serif; color: #1e293b; padding: 24px; max-width: 800px; margin: 0 auto; }'+
+'h1 { font-size: 18px; margin: 0 0 4px; color: #0f172a; }'+
+'.sub-title { color: #64748b; margin: 0 0 20px; }'+
+'section.acct { border-top: 2px solid #0f172a; padding: 14px 0 8px; margin-bottom: 12px; break-inside: avoid; }'+
+'h2 { font-size: 13px; margin: 0 0 6px; letter-spacing: 0.5px; text-transform: uppercase; }'+
+'.bal-line { margin: 0 0 8px; color: #475569; }'+
+'.empty { color: #94a3b8; font-style: italic; margin: 6px 0; }'+
+'.grp { margin: 8px 0; }'+
+'.grp h3 { font-size: 11px; margin: 8px 0 4px; color: #475569; font-weight: 600; }'+
+'table { width: 100%; border-collapse: collapse; font-size: 11px; }'+
+'table td { padding: 2px 6px; border-bottom: 1px solid #f1f5f9; }'+
+'table td.date { color: #64748b; width: 90px; white-space: nowrap; text-align: center; font-variant-numeric: tabular-nums; }'+
+'table td.amt { text-align: right; font-variant-numeric: tabular-nums; width: 110px; white-space: nowrap; font-weight: 600; }'+
+'table td.amt.pos { color: #15803d; }'+
+'table td.amt.neg { color: #b91c1c; }'+
+'table tr.col-hdr th { text-align: left; padding: 4px 6px; font-size: 10px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid #cbd5e1; background: #f1f5f9; }'+
+'table tr.col-hdr th.date-hdr { text-align: center; }'+
+'table tr.col-hdr th.amt-hdr { text-align: right; }'+
+'table tr.sub td { font-weight: 700; border-top: 1px solid #cbd5e1; border-bottom: 0; padding-top: 4px; }'+
+'table tr.note-row td { padding-top: 0; padding-bottom: 4px; border: 0; }'+
+'.note { color: #64748b; font-style: italic; padding-left: 12px; font-size: 10px; }'+
+'.inv { color: #64748b; font-size: 10px; }'+
+'.net { margin: 8px 0 2px; }'+
+'.end { margin: 4px 0 0; font-size: 12px; font-weight: 700; }'+
+'.end .neg, .net .neg { color: #b91c1c; }'+
+'.end b, .net b { font-variant-numeric: tabular-nums; }'+
+'.transfer-needed { margin: 6px 0 4px; padding: 8px 10px; background: #fef2f2; border-left: 3px solid #b91c1c; color: #991b1b; font-size: 11px; font-weight: 600; border-radius: 0 3px 3px 0; }'+
+'.transfer-needed b { color: #b91c1c; font-variant-numeric: tabular-nums; }'+
+'.inflow-grp { margin: 10px 0; padding: 8px 10px; background: #ecfdf5; border-left: 3px solid #059669; border-radius: 0 3px 3px 0; }'+
+'.inflow-grp h3 { color: #065f46; margin-top: 0; }'+
+'.inflow-grp .walter-action { color: #065f46; background: #d1fae5; padding: 2px 8px; border-radius: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; font-size: 9px; }'+
+'.inflow-grp table td { border-color: #a7f3d0; }'+
+'.inflow-grp tr.sub td { border-top-color: #059669; }'+
+'.inflow-note { font-size: 10px; color: #065f46; font-style: italic; margin: 6px 0 0; }'+
+'.outflow-grp { margin: 10px 0; padding: 8px 10px; background: #fff7ed; border-left: 3px solid #ea580c; border-radius: 0 3px 3px 0; }'+
+'.outflow-grp h3 { color: #9a3412; margin-top: 0; }'+
+'.outflow-grp .walter-action-out { color: #9a3412; background: #fed7aa; padding: 2px 8px; border-radius: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; font-size: 9px; }'+
+'.outflow-grp table td { border-color: #fed7aa; }'+
+'.outflow-grp tr.sub td { border-top-color: #ea580c; }'+
+'.outflow-note { font-size: 10px; color: #9a3412; font-style: italic; margin: 6px 0 0; }'+
+'.upcoming-grp { margin-top: 12px; padding: 8px 10px; background: #fffbeb; border-left: 3px solid #d97706; border-radius: 0 3px 3px 0; }'+
+'.upcoming-grp h3 { color: #92400e; margin-top: 0; }'+
+'.upcoming-grp table td { border-color: #fde68a; }'+
+'.upcoming-grp tr.sub td { border-top-color: #d97706; }'+
+'.upcoming-note { font-size: 10px; color: #92400e; font-style: italic; margin: 6px 0 0; }'+
+'.grand { border-top: 3px solid #0f172a; padding: 14px; margin-top: 18px; background: #f8fafc; border-radius: 4px; }'+
+'.grand h2 { font-size: 13px; margin: 0 0 8px; border: 0; padding: 0; }'+
+'.grand .row { display: flex; justify-content: space-between; padding: 3px 0; }'+
+'.grand .row b { font-variant-numeric: tabular-nums; }'+
+'.foot { text-align: center; color: #94a3b8; font-size: 10px; margin-top: 24px; padding-top: 12px; border-top: 1px solid #e2e8f0; }'+
+'.print-btn { position: fixed; top: 16px; right: 16px; padding: 10px 16px; background: #0f172a; color: #fff; border: 0; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }'+
+'.print-btn:hover { background: #1e293b; }'+
+'@media print { body { padding: 0.4in 0.5in; } section.acct { break-inside: avoid; } .grand { break-inside: avoid; } .print-btn { display: none; } }'+
+'</style></head><body>'+
+'<button class="print-btn" onclick="window.print()">Print / Save as PDF</button>'+
+'<h1>MMI Cash Position Review</h1>'+
+'<p class="sub-title">Week of '+esc(report.weekRange)+'</p>';
+
+  for(const a of report.bankAccounts) html += accountSection(a, false);
+  const ccsActive = report.ccAccounts.filter(function(c){ return c.ap.length; });
+  for(const c of ccsActive) html += accountSection(c, true);
+
+  const g = report.grandTotals;
+  const grandNet = -g.autopayOut - g.apOut - g.transOut + g.depIn;
+  html += '<div class="grand"><h2>Grand totals — bank impact this week ('+esc(report.weekRange)+')</h2>'+
+'<div class="row"><span>Autopay outflow (this week)</span><b>('+money(g.autopayOut)+')</b></div>'+
+'<div class="row"><span>Approved AP outflow (banks)</span><b>('+money(g.apOut)+')</b></div>'+
+'<div class="row"><span>Transfers out <span style="color:#9a3412;font-size:10px;font-weight:700;">← Walter to execute transfers OUT</span></span><b>('+money(g.transOut)+')</b></div>'+
+'<div class="row"><span>Transfers in + Deposits <span style="color:#065f46;font-size:10px;font-weight:700;">← Walter to execute transfers IN</span></span><b>+'+money(g.depIn)+'</b></div>'+
+    (g.ccAp>0 ? '<div class="row"><span>Approved AP charged to CCs (does not affect bank cash)</span><b>('+money(g.ccAp)+')</b></div>' : '')+
+'<div class="row" style="border-top:1px solid #cbd5e1; padding-top:6px; margin-top:6px"><span><b>Net bank impact this week</b></span><b style="color:'+(grandNet<0?'#b91c1c':'#15803d')+'">'+(grandNet>=0?'+':'')+money(grandNet)+'</b></div>'+
+    (g.upcomingAuto>0 ? '<div class="row" style="margin-top:8px;color:#92400e"><span>Heads-up — upcoming autopays after Sat '+esc(report.satStr)+'</span><b>('+money(g.upcomingAuto)+')</b></div>' : '')+
+'</div>';
+  html += '<p class="foot">Generated '+new Date().toLocaleString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'})+' &nbsp;·&nbsp; Male Mogul Initiative &amp; Enterprises</p>';
+  html += '</body></html>';
+  return html;
+}
+
+// ============================================================
+//  REPORT AS INLINE HTML — same content as reportAsHTML but with
+//  every style inlined so Gmail (and other webmail clients) keep
+//  the formatting when Juanita pastes from her clipboard. No
+//  external CSS, no <head>/<body>/<html> wrapper, no print button.
+// ============================================================
+function reportAsInlineHTML(report){
+  const S = {
+    body:        'font:11px/1.4 -apple-system,system-ui,Segoe UI,sans-serif;color:#1e293b;max-width:800px;',
+    h1:          'font-size:18px;margin:0 0 4px;color:#0f172a;',
+    subTitle:    'color:#64748b;margin:0 0 20px;font-size:11px;',
+    section:     'border-top:2px solid #0f172a;padding:14px 0 8px;margin-bottom:12px;',
+    h2:          'font-size:13px;margin:0 0 6px;letter-spacing:0.5px;text-transform:uppercase;font-weight:700;',
+    balLine:     'margin:0 0 8px;color:#475569;font-size:11px;',
+    empty:       'color:#94a3b8;font-style:italic;margin:6px 0;font-size:11px;',
+    grp:         'margin:8px 0;',
+    grpH3:       'font-size:11px;margin:8px 0 4px;color:#475569;font-weight:600;',
+    table:       'width:100%;border-collapse:collapse;font-size:11px;',
+    td:          'padding:2px 6px;border-bottom:1px solid #f1f5f9;',
+    tdDate:      'padding:2px 6px;border-bottom:1px solid #f1f5f9;color:#64748b;width:90px;white-space:nowrap;text-align:center;font-variant-numeric:tabular-nums;',
+    tdAmtNeg:    'padding:2px 6px;border-bottom:1px solid #f1f5f9;text-align:right;width:110px;white-space:nowrap;font-weight:600;color:#b91c1c;',
+    tdAmtPos:    'padding:2px 6px;border-bottom:1px solid #f1f5f9;text-align:right;width:110px;white-space:nowrap;font-weight:600;color:#15803d;',
+    subTdLbl:    'padding:4px 6px 2px;font-weight:700;border-top:1px solid #cbd5e1;',
+    subTdAmtNeg: 'padding:4px 6px 2px;text-align:right;width:110px;font-weight:700;border-top:1px solid #cbd5e1;color:#b91c1c;',
+    subTdAmtPos: 'padding:4px 6px 2px;text-align:right;width:110px;font-weight:700;border-top:1px solid #cbd5e1;color:#15803d;',
+    colHdrTh:    'text-align:left;padding:4px 6px;font-size:10px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:0.06em;border-bottom:1px solid #cbd5e1;background:#f1f5f9;',
+    colHdrThDate:'text-align:center;padding:4px 6px;font-size:10px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:0.06em;border-bottom:1px solid #cbd5e1;background:#f1f5f9;',
+    colHdrThAmt: 'text-align:right;padding:4px 6px;font-size:10px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:0.06em;border-bottom:1px solid #cbd5e1;background:#f1f5f9;',
+    note:        'color:#64748b;font-style:italic;padding-left:12px;font-size:10px;',
+    inv:         'color:#64748b;font-size:10px;',
+    netP:        'margin:8px 0 2px;font-size:11px;',
+    endP:        'margin:4px 0 0;font-size:12px;font-weight:700;',
+    transferNeeded: 'margin:6px 0 4px;padding:8px 10px;background:#fef2f2;border-left:3px solid #b91c1c;color:#991b1b;font-size:11px;font-weight:600;',
+    inflowGrp:   'margin:10px 0;padding:8px 10px;background:#ecfdf5;border-left:3px solid #059669;',
+    inflowH3:    'font-size:11px;margin:0 0 4px;color:#065f46;font-weight:600;',
+    walterInAct: 'color:#065f46;background:#d1fae5;padding:2px 8px;border-radius:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;font-size:9px;',
+    inflowNote:  'font-size:10px;color:#065f46;font-style:italic;margin:6px 0 0;',
+    outflowGrp:  'margin:10px 0;padding:8px 10px;background:#fff7ed;border-left:3px solid #ea580c;',
+    outflowH3:   'font-size:11px;margin:0 0 4px;color:#9a3412;font-weight:600;',
+    walterOutAct:'color:#9a3412;background:#fed7aa;padding:2px 8px;border-radius:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;font-size:9px;',
+    outflowNote: 'font-size:10px;color:#9a3412;font-style:italic;margin:6px 0 0;',
+    upcomingGrp: 'margin:12px 0;padding:8px 10px;background:#fffbeb;border-left:3px solid #d97706;',
+    upcomingH3:  'font-size:11px;margin:0 0 4px;color:#92400e;font-weight:600;',
+    upcomingNote:'font-size:10px;color:#92400e;font-style:italic;margin:6px 0 0;',
+    grand:       'border-top:3px solid #0f172a;padding:14px;margin-top:18px;background:#f8fafc;',
+    grandH2:     'font-size:13px;margin:0 0 8px;font-weight:700;',
+    grandRow:    'display:flex;justify-content:space-between;padding:3px 0;font-size:11px;',
+    foot:        'text-align:center;color:#94a3b8;font-size:10px;margin-top:24px;padding-top:12px;border-top:1px solid #e2e8f0;',
+  };
+
+  const lineGroup = function(title, list, isInflow, subtotalLabel, dateLabel){
+    if(!list.length) return '';
+    const subtotal = list.reduce(function(s,x){return s+x.amount;},0);
+    const amtTd = isInflow ? S.tdAmtPos : S.tdAmtNeg;
+    const subAmtTd = isInflow ? S.subTdAmtPos : S.subTdAmtNeg;
+    const amtLabel = isInflow ? 'Amount In' : 'Amount Out';
+    let g = '<div style="'+S.grp+'"><h3 style="'+S.grpH3+'">'+esc(title)+'</h3>'+
+            '<table style="'+S.table+'" cellspacing="0">';
+    g += '<thead><tr><th style="'+S.colHdrTh+'">Vendor / Invoice</th><th style="'+S.colHdrThDate+'">'+esc(dateLabel||'Date')+'</th><th style="'+S.colHdrThAmt+'">'+esc(amtLabel)+'</th></tr></thead>';
+    list.forEach(function(x){
+      const billBadge = x.billStatus
+        ? ' <span style="display:inline-block;font-size:9px;font-weight:700;color:'+x.billStatusColor+';background:'+x.billStatusBg+';padding:1px 6px;border-radius:8px;margin-left:4px;letter-spacing:0.03em;text-transform:uppercase;">BILL: '+esc(x.billStatusLbl)+'</span>'
+        : '';
+      g += '<tr><td style="'+S.td+'">'+esc(x.vendor)+(x.invRef?' <span style="'+S.inv+'">'+esc(x.invRef)+'</span>':'')+billBadge+'</td>'+
+           '<td style="'+S.tdDate+'">'+esc(x.dateStr)+'</td>'+
+           '<td style="'+amtTd+'">'+(isInflow?'+':'(')+money(x.amount)+(isInflow?'':')')+'</td></tr>';
+      if(x.note) g += '<tr><td colspan="3" style="padding:0 6px 4px;border:0;"><span style="'+S.note+'">'+esc(x.note)+'</span></td></tr>';
+    });
+    g += '<tr><td style="'+S.subTdLbl+'">'+esc(subtotalLabel)+'</td><td style="border-top:1px solid #cbd5e1;"></td><td style="'+subAmtTd+'">'+(isInflow?'+':'(')+money(subtotal)+(isInflow?'':')')+'</td></tr>';
+    g += '</table></div>';
+    return g;
+  };
+
+  const accountSection = function(a, isCc){
+    if(isCc && !a.ap.length) return '';
+    const hasActivity = isCc ? a.ap.length : (a.autopays.length || a.ap.length || a.transfersOut.length || a.deposits.length);
+    let h = '<div style="'+S.section+'"><h2 style="'+S.h2+'">'+esc(a.label)+'</h2>';
+    if(isCc){
+      h += '<p style="'+S.balLine+'">Current balance: <b>'+(a.startBal!=null?money(a.startBal):'No data')+'</b>';
+      if(a.limit!=null) h += ' &nbsp;·&nbsp; Credit limit: '+money(a.limit);
+      if(a.startAvail!=null) h += ' &nbsp;·&nbsp; Available before: <b>'+money(a.startAvail)+'</b>';
+      h += '</p>';
+    } else {
+      h += '<p style="'+S.balLine+'">Starting balance: <b>'+(a.startBal!=null?money(a.startBal):'No data')+'</b></p>';
+    }
+    if(!hasActivity && !isCc && !a.upcomingAutopays.length){
+      h += '<p style="'+S.empty+'">(no activity scheduled this week)</p>';
+    } else if(!hasActivity && isCc){
+      h += '<p style="'+S.empty+'">(no activity scheduled this week)</p>';
+    }
+    if(!isCc){
+      const wk = report.weekRange;
+      h += lineGroup('Autopays this week ('+wk+')', a.autopays, false, 'Autopay subtotal', 'Hits On');
+      h += lineGroup('Approved payables this week ('+wk+')', a.ap, false, 'Payables subtotal', 'Pay On');
+      if(a.transfersOut.length){
+        h += '<div style="'+S.outflowGrp+'"><h3 style="'+S.outflowH3+'">⬆ Transfers out this week ('+esc(wk)+') &nbsp;·&nbsp; <span style="'+S.walterOutAct+'">Walter to execute transfers FROM this account</span></h3>'+
+             '<table style="'+S.table+'" cellspacing="0">';
+        h += '<thead><tr><th style="'+S.colHdrTh+'">Vendor / Destination</th><th style="'+S.colHdrThDate+'">Send On</th><th style="'+S.colHdrThAmt+'">Amount Out</th></tr></thead>';
+        a.transfersOut.forEach(function(x){
+          h += '<tr><td style="'+S.td+'">'+esc(x.vendor)+'</td><td style="'+S.tdDate+'">'+esc(x.dateStr)+'</td><td style="'+S.tdAmtNeg+'">('+money(x.amount)+')</td></tr>';
+          if(x.note) h += '<tr><td colspan="3" style="padding:0 6px 4px;border:0;"><span style="'+S.note+'">'+esc(x.note)+'</span></td></tr>';
+        });
+        h += '<tr><td style="'+S.subTdLbl+'">Transfers-out subtotal</td><td style="border-top:1px solid #cbd5e1;"></td><td style="'+S.subTdAmtNeg+'">('+money(a.transOutTot)+')</td></tr>';
+        h += '</table><p style="'+S.outflowNote+'">Money leaves THIS account and lands in another MMI account. Walter initiates these transfers — the matching inflow appears under "Transfers in + Deposits" of the receiving account.</p></div>';
+      }
+      if(a.deposits.length){
+        h += '<div style="'+S.inflowGrp+'"><h3 style="'+S.inflowH3+'">⬇ Transfers in + Deposits this week ('+esc(wk)+') &nbsp;·&nbsp; <span style="'+S.walterInAct+'">Walter to execute transfers INTO this account</span></h3>'+
+             '<table style="'+S.table+'" cellspacing="0">';
+        h += '<thead><tr><th style="'+S.colHdrTh+'">Vendor / Source</th><th style="'+S.colHdrThDate+'">Arrives</th><th style="'+S.colHdrThAmt+'">Amount In</th></tr></thead>';
+        a.deposits.forEach(function(x){
+          h += '<tr><td style="'+S.td+'">'+esc(x.vendor)+'</td><td style="'+S.tdDate+'">'+esc(x.dateStr)+'</td><td style="'+S.tdAmtPos+'">+'+money(x.amount)+'</td></tr>';
+          if(x.note) h += '<tr><td colspan="3" style="padding:0 6px 4px;border:0;"><span style="'+S.note+'">'+esc(x.note)+'</span></td></tr>';
+        });
+        h += '<tr><td style="'+S.subTdLbl+'">Transfers in + Deposits subtotal</td><td style="border-top:1px solid #cbd5e1;"></td><td style="'+S.subTdAmtPos+'">+'+money(a.depTot)+'</td></tr>';
+        h += '</table><p style="'+S.inflowNote+'">Items above are transfers from other MMI accounts (Walter initiates) and/or external deposits that arrive on their own. The ENDING BALANCE below assumes ALL of these land this week.</p></div>';
+      }
+    } else if(a.ap.length){
+      h += lineGroup('Approved payables this week ('+report.weekRange+')', a.ap, false, 'Payables subtotal', 'Pay On');
+    }
+    if(isCc){
+      if(a.endAvail!=null) h += '<p style="'+S.endP+'">Available after activity: <b style="'+(a.endAvail<0?'color:#b91c1c;':'')+'">'+money(a.endAvail)+'</b></p>';
+    } else {
+      if(hasActivity){
+        const netChange = -a.autoTot - a.apTot - a.transOutTot + a.depTot;
+        h += '<p style="'+S.netP+'">Net change this week: <b style="'+(netChange<0?'color:#b91c1c;':'color:#15803d;')+'">'+(netChange>=0?'+':'')+money(netChange)+'</b></p>';
+      }
+      h += '<p style="'+S.endP+'">ENDING BALANCE (after this week, assuming all transfers/deposits land): <b style="'+(a.endBal!=null&&a.endBal<0?'color:#b91c1c;':'')+'">'+(a.endBal!=null?money(a.endBal):'—')+'</b></p>';
+      if(a.transferNeeded != null){
+        if(a.depTot > 0){
+          h += '<p style="'+S.transferNeeded+'">⚠ ADDITIONAL TRANSFER NEEDED: bring in ~<b style="color:#b91c1c;">'+money(a.transferNeeded)+'</b> ON TOP OF the transfers/deposits listed above to keep a working buffer.</p>';
+        } else {
+          h += '<p style="'+S.transferNeeded+'">⚠ TRANSFER NEEDED: bring in ~<b style="color:#b91c1c;">'+money(a.transferNeeded)+'</b> to cover this week and keep a working buffer.</p>';
+        }
+      }
+      if(a.upcomingAutopays.length){
+        h += '<div style="'+S.upcomingGrp+'"><h3 style="'+S.upcomingH3+'">Heads-up — upcoming autopays AFTER Sat '+esc(report.satStr)+' (within ~14 days)</h3>'+
+             '<table style="'+S.table+'" cellspacing="0">';
+        h += '<thead><tr><th style="'+S.colHdrTh+'">Vendor</th><th style="'+S.colHdrThDate+'">Hits On</th><th style="'+S.colHdrThAmt+'">Amount Out</th></tr></thead>';
+        a.upcomingAutopays.forEach(function(x){
+          h += '<tr><td style="'+S.td+'">'+esc(x.vendor)+'</td><td style="'+S.tdDate+'">'+esc(x.dateStr)+'</td><td style="'+S.tdAmtNeg+'">('+money(x.amount)+')</td></tr>';
+        });
+        h += '<tr><td style="'+S.subTdLbl+'">Upcoming autopay total</td><td style="border-top:1px solid #cbd5e1;"></td><td style="'+S.subTdAmtNeg+'">('+money(a.upcomingAutoTot)+')</td></tr>';
+        h += '</table><p style="'+S.upcomingNote+'">Not included in this week\'s ending balance — heads-up only.</p></div>';
+      }
+    }
+    h += '</div>';
+    return h;
+  };
+
+  let out = '<div style="'+S.body+'">';
+  out += '<h1 style="'+S.h1+'">MMI Cash Position Review</h1>';
+  out += '<p style="'+S.subTitle+'">Week of '+esc(report.weekRange)+'</p>';
+  for(const a of report.bankAccounts) out += accountSection(a, false);
+  const ccsActive = report.ccAccounts.filter(function(c){ return c.ap.length; });
+  for(const c of ccsActive) out += accountSection(c, true);
+
+  const g = report.grandTotals;
+  const grandNet = -g.autopayOut - g.apOut - g.transOut + g.depIn;
+  out += '<div style="'+S.grand+'"><h2 style="'+S.grandH2+'">Grand totals — bank impact this week ('+esc(report.weekRange)+')</h2>';
+  out += '<div style="'+S.grandRow+'"><span>Autopay outflow (this week)</span><b>('+money(g.autopayOut)+')</b></div>';
+  out += '<div style="'+S.grandRow+'"><span>Approved AP outflow (banks)</span><b>('+money(g.apOut)+')</b></div>';
+  out += '<div style="'+S.grandRow+'"><span>Transfers out <span style="color:#9a3412;font-size:10px;font-weight:700;">← Walter to execute transfers OUT</span></span><b>('+money(g.transOut)+')</b></div>';
+  out += '<div style="'+S.grandRow+'"><span>Transfers in + Deposits <span style="color:#065f46;font-size:10px;font-weight:700;">← Walter to execute transfers IN</span></span><b>+'+money(g.depIn)+'</b></div>';
+  if(g.ccAp>0) out += '<div style="'+S.grandRow+'"><span>Approved AP charged to CCs (does not affect bank cash)</span><b>('+money(g.ccAp)+')</b></div>';
+  out += '<div style="'+S.grandRow+';border-top:1px solid #cbd5e1;padding-top:6px;margin-top:6px;"><span><b>Net bank impact this week</b></span><b style="color:'+(grandNet<0?'#b91c1c':'#15803d')+'">'+(grandNet>=0?'+':'')+money(grandNet)+'</b></div>';
+  if(g.upcomingAuto>0) out += '<div style="'+S.grandRow+';margin-top:8px;color:#92400e;"><span>Heads-up — upcoming autopays after Sat '+esc(report.satStr)+'</span><b>('+money(g.upcomingAuto)+')</b></div>';
+  out += '</div>';
+  out += '<p style="'+S.foot+'">Generated '+new Date().toLocaleString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'})+' &nbsp;·&nbsp; Male Mogul Initiative &amp; Enterprises</p>';
+  out += '</div>';
+  return out;
+}
+
+// ============================================================
+//  PDF EXPORT — opens the cash report in a new window so the
+//  print output is purpose-built (per-account starting balance,
+//  every line item, ending balance) instead of the on-screen UI.
 // ============================================================
 function exportPDF(){
-  // Stamp the print footer with today's date/time
-  const footer = document.getElementById('printFooterDate');
-  if(footer) footer.textContent = 'Printed ' +
-    new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'}) +
-    ' at ' + new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
-
-  // Fire print dialog
-  // Note: autopay panels are hidden via @media print CSS
-  // Collapsed payables groups are forced open via @media print CSS
-  window.print();
+  const report = buildCashReport();
+  const html = reportAsHTML(report);
+  const w = window.open('', '_blank');
+  if(!w){
+    alert('A pop-up blocker prevented the report from opening. Allow pop-ups for this page and try again.');
+    return;
+  }
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
+  // Auto-fire the print dialog once the new window has rendered.
+  // If the browser blocks the auto-print, the Print/Save as PDF button at the
+  // top of the report still works.
+  const tryPrint = function(){ try { w.focus(); w.print(); } catch(e){} };
+  if(w.document.readyState === 'complete'){ setTimeout(tryPrint, 150); }
+  else { w.onload = function(){ setTimeout(tryPrint, 150); }; }
 }
 
 // ============================================================
@@ -2785,44 +3714,125 @@ function isThisWeek(dateStr){
 }
 
 // ============================================================
-//  EMAIL QUEUE
+//  EMAIL — builds the full Cash Position Review and hands it to
+//  Gmail in two pieces so paste preserves formatting:
+//    1. Writes the report to the clipboard FIRST, while the planner
+//       page still has focus (a new tab steals focus, which blocks
+//       clipboard writes). Both rich HTML and plain-text versions
+//       are placed on the clipboard so Gmail keeps colors, tables,
+//       and the highlighted Walter-action blocks when pasted.
+//    2. THEN opens a Gmail compose tab with recipient + subject only
+//       (no body in the URL — Gmail returns 400 when the URL grows
+//       past ~2 KB, which a multi-account report easily does).
+//    3. Juanita pastes with Ctrl+V (Cmd+V on Mac).
+//  Falls back to plain-text clipboard if rich clipboard isn't
+//  supported, then to a hidden textarea + execCommand as last resort.
 // ============================================================
-function emailQueue(){
-  const items=buildItems();
-  const rows=[];
-  for(const it of items){
-    const st=STATE.rows[it.key]||{};
-    if(!st.ok) continue;
-    const bill=BILL_OPTS.find(o=>o.v===(st.bill||'none'))?.lbl||'';
-    rows.push({vendor:it.vendor,inv:it.invRef||'',due:fmtDate(it.dueDate),bill,
-      amt:(st.payAmt!=null?st.payAmt:it.amtDue),payOn:st.payOn||'',acct:st.acct||it.defAcct,note:st.note||''});
+async function emailQueue(){
+  const report = buildCashReport();
+  const hasAny =
+    report.bankAccounts.some(a => a.autopays.length || a.ap.length || a.transfersOut.length || a.deposits.length || a.upcomingAutopays.length) ||
+    report.ccAccounts.some(c => c.ap.length);
+  if(!hasAny){ alert('Nothing to report yet — no active autopays or approved items this week.'); return; }
+
+  const textBody = reportAsText(report);
+  const htmlBody = reportAsInlineHTML(report);
+  const subj = 'MMI Cash Position Review — '+report.weekRange;
+  // Default recipient is Walter — Juanita sends from the finance or admin
+  // inbox after pasting the body and adding a personal note. The button
+  // opens a Gmail compose draft (never auto-sends).
+  const to   = 'walterm@malemogulinitiative.org';
+  const gmailUrl = 'https://mail.google.com/mail/?view=cm&fs=1'+
+    '&to='+encodeURIComponent(to)+
+    '&su='+encodeURIComponent(subj);
+
+  // 1. Write to clipboard FIRST while the planner page has focus.
+  let clipboardOK = false;
+  let usedRich = false;
+  try {
+    if(navigator.clipboard && window.ClipboardItem){
+      const item = new ClipboardItem({
+        'text/html':  new Blob([htmlBody], {type:'text/html'}),
+        'text/plain': new Blob([textBody], {type:'text/plain'}),
+      });
+      await navigator.clipboard.write([item]);
+      clipboardOK = true;
+      usedRich = true;
+    } else if(navigator.clipboard && navigator.clipboard.writeText){
+      await navigator.clipboard.writeText(textBody);
+      clipboardOK = true;
+    } else {
+      clipboardOK = legacyClipboardCopy(textBody);
+    }
+  } catch(e){
+    // Some browsers block rich clipboard writes — retry with plain text only.
+    try {
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        await navigator.clipboard.writeText(textBody);
+        clipboardOK = true;
+      } else {
+        clipboardOK = legacyClipboardCopy(textBody);
+      }
+    } catch(e2){
+      clipboardOK = legacyClipboardCopy(textBody);
+    }
   }
-  for(const m of (STATE.manual||[])){
-    if(!m.ok) continue;
-    const isDep = m.kind==='deposit';
-    const bill = isDep ? 'Deposit / Transfer In' : (BILL_OPTS.find(o=>o.v===(m.bill||'none'))?.lbl||'');
-    rows.push({vendor:m.vendor||'(unnamed)',inv:m.invRef||'',due:fmtDate(m.dueDate||''),bill,
-      amt:parseFloat(m.payAmt)||0,payOn:m.payOn||'',acct:m.acct||'',note:m.note||'',isDeposit:isDep});
+
+  // 2. Open the PDF report tab so Juanita can save it as a PDF and attach
+  //    it to the Gmail draft. Gmail compose URLs don't support attachments
+  //    via parameters, so the PDF needs to be attached manually — opening
+  //    the print tab alongside Gmail makes that a single drag-and-drop step.
+  const pdfHtml = reportAsHTML(report);
+  const pdfWin = window.open('', '_blank');
+  if(pdfWin){
+    pdfWin.document.open();
+    pdfWin.document.write(pdfHtml);
+    pdfWin.document.close();
+    const tryPrint = function(){ try { pdfWin.focus(); pdfWin.print(); } catch(e){} };
+    if(pdfWin.document.readyState === 'complete'){ setTimeout(tryPrint, 200); }
+    else { pdfWin.onload = function(){ setTimeout(tryPrint, 200); }; }
   }
-  if(!rows.length){ alert('No approved payments to send.'); return; }
-  const wk=$('weekOf')?.textContent||today();
-  const totalOut = rows.reduce((s,r)=>s + (r.isDeposit?0:r.amt), 0);
-  const totalIn  = rows.reduce((s,r)=>s + (r.isDeposit?r.amt:0), 0);
-  let body='MMI Cash Position Review — Approved Payables Queue%0D%0A';
-  body+=`Week of ${wk}%0D%0A%0D%0A`;
-  rows.forEach((r,i)=>{
-    const label = r.isDeposit ? '↻ TRANSFER IN — ' : '';
-    body+=`${i+1}. ${encodeURIComponent(label+r.vendor)}${r.inv?' ('+encodeURIComponent(r.inv)+')':''}%0D%0A`;
-    const amtLbl = r.isDeposit ? 'Amount In' : 'Amount';
-    body+=`   Due: ${r.due} | ${amtLbl}: ${encodeURIComponent(money(r.amt))} | Pay On: ${r.payOn||'—'} | Account: ${encodeURIComponent(r.acct)}%0D%0A`;
-    if(r.bill) body+=`   ${r.isDeposit?'Type':'BILL Status'}: ${encodeURIComponent(r.bill)}%0D%0A`;
-    if(r.note) body+=`   Notes: ${encodeURIComponent(r.note)}%0D%0A`;
-    body+='%0D%0A';
-  });
-  body+=`TOTAL OUT: ${encodeURIComponent(money(totalOut))}`;
-  if(totalIn>0) body+=`%0D%0ATOTAL IN: ${encodeURIComponent('+'+money(totalIn))}%0D%0ANET: ${encodeURIComponent(money(totalOut-totalIn))}`;
-  const subj=encodeURIComponent(`MMI Approved Payables — Week of ${wk}`);
-  window.location.href=`mailto:finance@malemogulinitiative.org?subject=${subj}&body=${body}`;
+
+  // 3. Open Gmail compose with just To + Subject (short URL, no 400).
+  const w = window.open(gmailUrl, '_blank');
+
+  // 4. Tell Juanita the three-step workflow.
+  if(clipboardOK && w && pdfWin){
+    const richMsg = usedRich ? ' (formatted)' : ' (plain text)';
+    alert(
+      'Three things just happened:\n\n'+
+      '1. The report is on your clipboard'+richMsg+'.\n'+
+      '2. A new tab opened with the PDF print dialog — click "Save as PDF" to save it somewhere you can find it.\n'+
+      '3. Gmail compose opened with the recipient and subject filled in.\n\n'+
+      'Next steps:\n'+
+      '• Save the PDF from the print dialog.\n'+
+      '• Switch to the Gmail tab, click in the body, and paste with Ctrl+V (Cmd+V on Mac).\n'+
+      '• Drag the saved PDF onto the Gmail compose window to attach it.'
+    );
+  } else if(clipboardOK && w){
+    alert('PDF tab did not open (pop-up blocked?). The report is on your clipboard — paste it into the Gmail tab with Ctrl+V. To attach a PDF, click ⎙ Print / PDF separately, save it, and drag it onto Gmail.');
+  } else if(clipboardOK){
+    alert('Pop-up blocked. The report is on your clipboard. Open a new email to '+to+' with subject "'+subj+'", paste with Ctrl+V, then click ⎙ Print / PDF separately to save a PDF and attach it.');
+  } else {
+    console.log(textBody);
+    alert('Could not copy to clipboard automatically. The plain-text report was logged to the browser console — open DevTools (F12) and copy it from there.');
+  }
+}
+
+// Fallback clipboard copy using a hidden textarea + document.execCommand.
+// Used when the Clipboard API isn't available or rejects the write.
+function legacyClipboardCopy(text){
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    return ok;
+  } catch(e){ return false; }
 }
 
 // ============================================================
@@ -2857,7 +3867,14 @@ function evalCalc(s){
   } catch(e){ return amt(s); }
 }
 function money(v){ return '$'+Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
-function fmtN(v){ return (v??0).toFixed(2); }
+// Number with thousands separators and 2 decimals, no $ sign — used inside
+// accounting-format cells where the $ is rendered as a separate left-aligned
+// element so dollar signs line up vertically across rows.
+function fmtComma(v){ return Number(v??0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+// fmtN now produces the comma-formatted version too so editable Pay Amt
+// inputs match Amt Due's display style. evalCalc strips $ and commas before
+// arithmetic, so commas in the input value are safe.
+function fmtN(v){ return Number(v??0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 function today(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function dl(content,type,name){ const b=new Blob([content],{type}); const u=URL.createObjectURL(b); const a=document.createElement('a'); a.href=u; a.download=name; a.click(); URL.revokeObjectURL(u); }
@@ -2906,11 +3923,41 @@ function isAutopayRelevant(s){
   const w=new Date(t); w.setDate(w.getDate()+14);
   return d<=w; // includes overdue and up-to-14-days-out
 }
+// Saturday-of-this-week cutoff used by the Balance-After-Activity calc
+// in all three places (sticky bar, bank tile, section header).
+function _satOfThisWeek(){
+  const now=new Date(); now.setHours(0,0,0,0);
+  const sun=new Date(now); sun.setDate(now.getDate()-now.getDay());
+  const sat=new Date(sun); sat.setDate(sun.getDate()+6); sat.setHours(23,59,59,999);
+  return sat;
+}
+// Sum of ACTIVE autopays from the given set whose effective due date
+// falls on or before Saturday of the current week. This is the autopay
+// amount included in every "Balance After Activity" total so the three
+// places agree on what hits the account by week's end.
+function autoTotBySaturday(autopayRows){
+  const sat = _satOfThisWeek();
+  return autopayRows.reduce((s,r)=>{
+    const k=vkey(r.vendor,r.invRef||r.billDay,r.entity);
+    const ast=((STATE.autopays||{})[k]||{}).status||'active';
+    if(ast!=='active') return s;
+    const d=parseDate(effectiveDueDate(r));
+    if(!d || d>sat) return s;
+    return s+(r.agingBal>0?r.agingBal:r.expAmt);
+  },0);
+}
+// All formatted dates in the planner render as MM/DD/YY (zero-padded) so
+// every date column reads as the same width and the eye doesn't have to
+// re-parse different formats (e.g. "May 29, 2026" next to "5/30/26").
 function fmtDate(s){
-  if(s instanceof Date) return s.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
-  const d=parseDate(s);
+  let d;
+  if(s instanceof Date) d = s;
+  else d = parseDate(s);
   if(!d) return s||'—';
-  return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  const mm = String(d.getMonth()+1).padStart(2,'0');
+  const dd = String(d.getDate()).padStart(2,'0');
+  const yy = String(d.getFullYear()).slice(-2);
+  return mm+'/'+dd+'/'+yy;
 }
 // Convert any parseDate-compatible string to YYYY-MM-DD for <input type="date">
 function toDateInput(s){ const d=parseDate(s); if(!d) return ''; return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
@@ -3001,6 +4048,128 @@ function toggleGrpKey(gid){
   saveState();
 }
 
+// Text-input date handler. Replaces the native <input type="date"> so the
+// displayed value is consistent MM/DD/YY. Juanita can type a date in any
+// format parseDate accepts (MM/DD/YY, M/D/YYYY, etc.) — on blur we
+// normalize the display to MM/DD/YY and persist MM/DD/YYYY to state.
+//   target: 'row' | 'manual' | 'autopay'
+//   keyOrId: the row key / manual id / autopay vkey
+//   field: state field name (e.g. 'payOn', 'dueDate', 'newDate')
+//   doRerender: pass true when the change affects row styling (e.g. dueDate
+//     drives past-due styling — needs a full re-render)
+function onDateTextChange(el, target, keyOrId, field, doRerender){
+  const v = (el.value||'').trim();
+  if(!v){
+    if(target === 'row')     updRow(keyOrId, field, '');
+    else if(target === 'manual')  updManual(keyOrId, field, '');
+    else if(target === 'autopay') updAutopay(keyOrId, field, '');
+    saveState();
+    if(doRerender){ const y=window.scrollY; renderAll(); requestAnimationFrame(()=>window.scrollTo(0,y)); }
+    return;
+  }
+  const d = parseDate(v);
+  if(!d){
+    el.classList.add('date-invalid');
+    el.title = 'Could not parse date. Try MM/DD/YY (e.g. 5/29/26).';
+    setTimeout(()=>el.classList.remove('date-invalid'), 1800);
+    return;
+  }
+  el.classList.remove('date-invalid');
+  el.title = '';
+  const stored = (d.getMonth()+1)+'/'+d.getDate()+'/'+d.getFullYear();
+  el.value = fmtDate(d);
+  if(target === 'row')     updRow(keyOrId, field, stored);
+  else if(target === 'manual')  updManual(keyOrId, field, stored);
+  else if(target === 'autopay') updAutopay(keyOrId, field, stored);
+  saveState();
+  if(doRerender){ const y=window.scrollY; renderAll(); requestAnimationFrame(()=>window.scrollTo(0,y)); }
+}
+
+// Calendar-icon click handler. Spawns a temporary native date input,
+// programmatically opens its picker, and writes the picked date back into
+// the visible text input + state on change. Avoids cluttering the DOM with
+// hidden date inputs per row.
+function openDatePickerForDate(textEl, target, keyOrId, field, doRerender){
+  const picker = document.createElement('input');
+  picker.type = 'date';
+  if(textEl.value){
+    const d = parseDate(textEl.value);
+    if(d){
+      picker.value = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    }
+  }
+  picker.style.cssText = 'position:fixed;opacity:0;pointer-events:none;left:0;top:0;width:1px;height:1px;';
+  document.body.appendChild(picker);
+  let done = false;
+  const cleanup = function(){
+    if(done) return;
+    done = true;
+    try { document.body.removeChild(picker); } catch(e){}
+  };
+  picker.addEventListener('change', function(){
+    if(picker.value){
+      const stored = fromDateInput(picker.value);
+      textEl.value = fmtDate(stored);
+      if(target === 'row')     updRow(keyOrId, field, stored);
+      else if(target === 'manual')  updManual(keyOrId, field, stored);
+      else if(target === 'autopay') updAutopay(keyOrId, field, stored);
+      saveState();
+      if(doRerender){ const y=window.scrollY; renderAll(); requestAnimationFrame(()=>window.scrollTo(0,y)); }
+    }
+    cleanup();
+  });
+  // Some browsers don't fire change on cancel, so clean up after a timeout
+  setTimeout(cleanup, 60000);
+  if(typeof picker.showPicker === 'function'){
+    try { picker.showPicker(); return; } catch(e){}
+  }
+  picker.focus();
+  picker.click();
+}
+
+// Click handler for the "✓ Pay" pills in the sticky strip. Scrolls the
+// table row into view and flashes it so Juanita can spot it instantly.
+function scrollToRow(rowId){
+  const row = document.getElementById(rowId);
+  if(!row) return;
+  try { row.scrollIntoView({behavior:'smooth', block:'center'}); } catch(e){}
+  row.classList.add('row-flash');
+  setTimeout(function(){ row.classList.remove('row-flash'); }, 1500);
+}
+
+// ✓ Pay column checkbox handler. Re-renders so the ticked row floats to the
+// top of its section and the sticky strip updates immediately. Scroll
+// position is preserved so Juanita doesn't lose her place.
+function onPayTickChange(key, checked, isManual, manualId){
+  if(isManual) updManual(manualId, 'ok', checked);
+  else updRow(key, 'ok', checked);
+  saveState();
+  const _savedScrollY = window.scrollY;
+  renderAll();
+  requestAnimationFrame(function(){
+    window.scrollTo(0, _savedScrollY);
+  });
+}
+
+// Account dropdown change handler. The row moves to the section for the new
+// account, but the move is silent — without scrolling, Juanita's viewport
+// stays where it was and the row appears to vanish. After the re-render
+// we scroll to and flash the row in its new section so the move is obvious.
+function onAcctChange(key, newAcct, isManual, manualId){
+  if(isManual) updManual(manualId, 'acct', newAcct);
+  else updRow(key, 'acct', newAcct);
+  saveState();
+  renderAll();
+  requestAnimationFrame(function(){
+    const rid = isManual ? 'mr_'+manualId : 'r_'+key;
+    const row = document.getElementById(rid);
+    if(!row) return;
+    try { row.scrollIntoView({behavior:'smooth', block:'center'}); } catch(e){}
+    row.classList.add('row-flash');
+    setTimeout(function(){ row.classList.remove('row-flash'); }, 1500);
+  });
+}
+
 // ============================================================
 //  AUTOPAY OVERRIDES
 // ============================================================
@@ -3035,7 +4204,9 @@ function autopayRowHTML(r){
   const isPastDue = !!(dueParsed && dueParsed < today_);
   const daysPast  = isPastDue ? Math.round((today_-dueParsed)/86400000) : 0;
   const unverifiedPastDue = st.status==='active' && isPastDue && !wasCleared;
-  const lastCleared = unverifiedPastDue ? lastClearedForVendor(r.vendor) : null;
+  // Always look up last-cleared history — feeds the always-on sub-text line
+  // under every autopay's Due Date so the column reads consistent.
+  const lastCleared = lastClearedForVendor(r.vendor);
   const lastClearedAcct = lastCleared ? shortAcctLabel(lastCleared.account) : '';
   const verifyTip = unverifiedPastDue
     ? `Due date is ${daysPast} day${daysPast===1?'':'s'} in the past and no clearing transaction has posted this month.\n\n`
@@ -3066,8 +4237,18 @@ function autopayRowHTML(r){
     </td>
     <td>
       <div class="dd${unverifiedPastDue?' verify':''}">${fmtDate(dueDisp)}${unverifiedPastDue?` <span class="verify-badge" title="${esc(verifyTip)}">⚠ Verify date</span>`:''}</div>
-      ${wasCleared?`<div class="dd-sub cleared">✓ cleared ${fmtDate(wasCleared)}</div>`:''}
-      ${unverifiedPastDue?`<div class="dd-sub verify-detail">${daysPast}d past due${lastCleared?` &middot; last cleared ${fmtDate(lastCleared.date)} for ${money(Math.abs(lastCleared.amount))}${lastClearedAcct?' from '+esc(lastClearedAcct):''}`:` &middot; no prior clearing on record`}</div>`:''}
+      ${(()=>{
+        // Every cell in the Due Date column gets a sub-text line so the
+        // column reads visually consistent.
+        if(wasCleared) return `<div class="dd-sub cleared">✓ cleared ${fmtDate(wasCleared)}</div>`;
+        if(unverifiedPastDue){
+          return `<div class="dd-sub verify-detail">${daysPast}d past due${lastCleared?` &middot; last cleared ${fmtDate(lastCleared.date)} for ${money(Math.abs(lastCleared.amount))}${lastClearedAcct?' from '+esc(lastClearedAcct):''}`:` &middot; no prior clearing on record`}</div>`;
+        }
+        if(lastCleared){
+          return `<div class="dd-sub">Last cleared ${fmtDate(lastCleared.date)} for ${money(Math.abs(lastCleared.amount))}${lastClearedAcct?' from '+esc(lastClearedAcct):''}</div>`;
+        }
+        return `<div class="dd-sub">${noHistoryNote()}</div>`;
+      })()}
     </td>
     <td>
       <select class="autopay-sel ${selCls}"
@@ -3083,16 +4264,30 @@ function autopayRowHTML(r){
         <option value="canceled"${isCanceled?' selected':''}>Canceled</option>
       </select>
     </td>
-    <td><div class="amt-ref">${baseAmt>0?money(baseAmt):(histAmt?money(histAmt)+'*':'—')}</div>
-      ${amtFromHist?`<div style="font-size:9px;color:var(--text-muted);margin-top:1px">*from history</div>`:''}</td>
-    <td><input type="text" class="pay-inp${amtFromHist?' mod':''}" value="${fmtN(effAmt)}"
-      onfocus="this.select()"
-      onchange="var v=evalCalc(this.value);this.value=fmtN(v);updAutopay('${k}','payAmt',v);saveState();"
-      title="${amtFromHist?'Pre-filled from most recent historical transaction — edit to override. Type a number or an expression (e.g. 1000+200) and Tab to compute.':'Type a number or an expression (e.g. 1000+200, 1500-50.25). Tab or click out to compute.'}"></td>
+    <td>${baseAmt>0
+        ? '<div class="acct-cell muted"><span class="acct-dollar">$</span><span class="acct-num">'+fmtComma(baseAmt)+'</span></div>'
+        : (histAmt
+            ? '<div class="acct-cell muted"><span class="acct-dollar">$</span><span class="acct-num">'+fmtComma(histAmt)+'*</span></div>'
+            : '<div class="amt-ref">—</div>')}
+      ${amtFromHist?`<div style="font-size:9px;color:var(--text-muted);margin-top:1px;text-align:right">*from history</div>`:''}</td>
+    <td>
+      <div class="acct-cell">
+        <span class="acct-dollar">$</span>
+        <input type="text" class="pay-inp acct-input${amtFromHist?' mod':''}" value="${fmtN(effAmt)}"
+          onfocus="this.select()"
+          onchange="var v=evalCalc(this.value);this.value=fmtN(v);updAutopay('${k}','payAmt',v);saveState();"
+          title="${amtFromHist?'Pre-filled from most recent historical transaction — edit to override. Type a number or an expression (e.g. 1000+200) and Tab to compute.':'Type a number or an expression (e.g. 1000+200, 1500-50.25). Tab or click out to compute.'}">
+      </div>
+    </td>
     <td>
       ${isDelay
-        ? `<input type="date" class="payon-inp field-unlocked" value="${toDateInput(st.newDate||'')}"
-            onchange="updAutopay('${k}','newDate',fromDateInput(this.value));saveState();">`
+        ? `<span class="date-input-wrap">
+            <input type="text" class="payon-inp field-unlocked" value="${st.newDate?fmtDate(st.newDate):''}" placeholder="MM/DD/YY"
+              onchange="onDateTextChange(this,'autopay','${k}','newDate',false)">
+            <button type="button" class="date-pick-btn" tabindex="-1"
+              onclick="openDatePickerForDate(this.previousElementSibling,'autopay','${k}','newDate',false)"
+              title="Open date picker">📅</button>
+          </span>`
         : st.status==='active'
           ? `<div style="font-size:11px;color:rgba(255,255,255,0.6);white-space:nowrap">${fmtDate(dueDisp)}</div>`
           : '—'}
@@ -3544,14 +4739,17 @@ function useBillAmountFromSuggestion(key, amtStr){
   if(!STATE.rows[key]) STATE.rows[key]={};
   STATE.rows[key].payAmt = v;
   saveState();
+  // Preserve scroll position across the re-render — the row is already where
+  // Juanita's cursor is, no need to chase it.
+  const _savedScrollY = window.scrollY;
   renderAll();
   requestAnimationFrame(()=>{
+    window.scrollTo(0, _savedScrollY);
     const row = document.getElementById('r_'+key);
     if(!row) return;
     const inp = row.querySelector('.pay-inp');
     if(inp){ inp.classList.remove('field-unlocked'); void inp.offsetWidth; inp.classList.add('field-unlocked'); }
     row.classList.add('row-flash');
-    try { row.scrollIntoView({behavior:'smooth', block:'center'}); } catch(e){}
     setTimeout(()=>row.classList.remove('row-flash'), 1600);
   });
 }
@@ -3574,21 +4772,21 @@ function onBillStatusChange(key, value, selectEl){
     }
   }
   saveState();
+  // Snapshot scroll position so the re-render doesn't jerk Juanita away from
+  // wherever she was working. Excluded/N/A rows still sink to the bottom of
+  // their group (the resort), but the viewport stays where she left it.
+  const _savedScrollY = window.scrollY;
   renderAll();
-  // Excluded / N/A rows sink to the bottom on re-render. Bring the row
-  // back into view and focus the Notes field so she can immediately
-  // record the reason without hunting for the row.
-  if(value === 'excl' || value === 'na'){
-    requestAnimationFrame(()=>{
+  requestAnimationFrame(()=>{
+    window.scrollTo(0, _savedScrollY);
+    if(value === 'excl' || value === 'na'){
       const row = document.getElementById('r_' + key);
-      if(!row) return;
-      try { row.scrollIntoView({behavior:'smooth', block:'center'}); } catch(e){}
-      const note = row.querySelector('.note-inp');
-      if(note){ try { note.focus(); } catch(e){} }
-      row.classList.add('row-flash');
-      setTimeout(()=>row.classList.remove('row-flash'), 1500);
-    });
-  }
+      if(row){
+        row.classList.add('row-flash');
+        setTimeout(()=>row.classList.remove('row-flash'), 1500);
+      }
+    }
+  });
 }
 
 function applyBillSuggestion(key, status){
@@ -3612,13 +4810,15 @@ function applyBillSuggestion(key, status){
     }
   } catch(e){}
   saveState();
+  // Preserve scroll position across the re-render so Juanita doesn't lose her place.
+  const _savedScrollY = window.scrollY;
   renderAll();
   // After re-render, flash the row so Juanita can see Apply took effect.
   requestAnimationFrame(()=>{
+    window.scrollTo(0, _savedScrollY);
     const row = document.getElementById('r_'+key);
     if(!row) return;
     row.classList.add('row-flash');
-    try { row.scrollIntoView({behavior:'smooth', block:'center'}); } catch(e){}
     setTimeout(()=>row.classList.remove('row-flash'), 1600);
   });
 }

@@ -1184,7 +1184,7 @@ let STATE = { rows:{}, manual:[], collapsed:{}, autopays:{}, apExpanded:{} };
 
 function saveState(){
   try {
-    var persisted = {rows:{}, autopays:{}, manual: STATE.manual||[], collapsed: STATE.collapsed||{}, apExpanded: STATE.apExpanded||{}, keyOpen: STATE.keyOpen||{}};
+    var persisted = {__schemaVersion: 3, rows:{}, autopays:{}, manual: STATE.manual||[], collapsed: STATE.collapsed||{}, apExpanded: STATE.apExpanded||{}, keyOpen: STATE.keyOpen||{}};
     for(var k in (STATE.rows||{})){
       var r = STATE.rows[k];
       if(r.__overridden || !r.__fromReview) persisted.rows[k] = Object.assign({}, r, {__fromReview:undefined, __overridden:undefined, __fromFragment:undefined});
@@ -1204,6 +1204,13 @@ function loadState(){
     const s = localStorage.getItem(STORE_KEY);
     if(!s) return;
     const stored = JSON.parse(s);
+    // One-time migration: pre-v3 state was authored when the planner itself was the source of truth.
+    // After the Review-tab-as-source-of-truth refactor, that state would re-apply stale decisions
+    // on top of the new baseline. Wipe it once so the user sees a clean Review-tab view.
+    if(!stored.__schemaVersion || stored.__schemaVersion < 3){
+      try { localStorage.removeItem(STORE_KEY); } catch(e){}
+      return;
+    }
     if(stored.rows){
       for(const k in stored.rows){
         STATE.rows[k] = Object.assign({}, STATE.rows[k]||{}, stored.rows[k], {__fromReview:false, __overridden:true});

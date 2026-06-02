@@ -1556,8 +1556,22 @@ function submitReviewEmail(){
     body += restoreUrl + '\n\n';
   }
   body += 'Thanks,\nWalter';
-  const url = 'mailto:admin@malemogulinitiative.org?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
-  window.location.href = url;
+  // Build both Gmail web compose URL (works for Gmail users) and a mailto: fallback.
+  // We open via an anchor click with target="_blank" so the request escapes the Google Sites iframe sandbox.
+  const gmailUrl = 'https://mail.google.com/mail/?view=cm&fs=1&to=' + encodeURIComponent('admin@malemogulinitiative.org') + '&su=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+  const mailtoUrl = 'mailto:admin@malemogulinitiative.org?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+  function openInNewTab(href){
+    const a = document.createElement('a');
+    a.href = href; a.target = '_blank'; a.rel = 'noopener noreferrer';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  }
+  // Try Gmail first (most reliable in iframe contexts when the user is a Gmail user)
+  try { openInNewTab(gmailUrl); }
+  catch(e){
+    // Fallback to mailto: in a new tab
+    try { openInNewTab(mailtoUrl); }
+    catch(e2){ alert('Could not open your email client. Copy the body manually:\n\nTo: admin@malemogulinitiative.org\nSubject: ' + subject + '\n\n' + body); }
+  }
 }
 
 function loadStateFromFragment(){

@@ -1040,6 +1040,8 @@ select.autopay-sel.paid    { background: #f0fdf4; border-color: #86efac; color: 
       <button class="btn btn-ghost" onclick="restoreState()" title="Restore from JSON file">↩ Restore</button>
       <button class="btn btn-ghost" onclick="exportPDF()" title="Export as PDF">🖨 Export PDF</button>
       <button class="btn btn-ghost" onclick="showSortDebug()" title="Show the exact dates each row is being sorted by">🔍 Sort Diagnostic</button>
+      <button class="btn btn-ghost" onclick="resetToReviewBaseline()" title="Wipe local Pay/Hold tweaks and reload the Review tab as-is">↺ Reset to Review</button>
+      <button class="btn btn-ghost" onclick="submitReviewEmail()" title="Email Juanita a summary of your review">✉ Submit Review</button>
       <button class="btn btn-ghost" onclick="refreshData()">↻ Refresh</button>
     </div>
   </div>
@@ -1182,7 +1184,16 @@ let STATE = { rows:{}, manual:[], collapsed:{}, autopays:{}, apExpanded:{} };
 
 function saveState(){
   try {
-    localStorage.setItem(STORE_KEY, JSON.stringify(STATE));
+    var persisted = {rows:{}, autopays:{}, manual: STATE.manual||[], collapsed: STATE.collapsed||{}, apExpanded: STATE.apExpanded||{}, keyOpen: STATE.keyOpen||{}};
+    for(var k in (STATE.rows||{})){
+      var r = STATE.rows[k];
+      if(r.__overridden || !r.__fromReview) persisted.rows[k] = Object.assign({}, r, {__fromReview:undefined, __overridden:undefined, __fromFragment:undefined});
+    }
+    for(var k in (STATE.autopays||{})){
+      var a = STATE.autopays[k];
+      if(a.__overridden || !a.__fromReview) persisted.autopays[k] = Object.assign({}, a, {__fromReview:undefined, __overridden:undefined, __fromFragment:undefined});
+    }
+    localStorage.setItem(STORE_KEY, JSON.stringify(persisted));
     const c = $('savedChip');
     c.style.display = '';
     c.textContent = '✓ Saved ' + new Date().toLocaleTimeString();
@@ -1191,7 +1202,22 @@ function saveState(){
 function loadState(){
   try {
     const s = localStorage.getItem(STORE_KEY);
-    if(s) STATE = JSON.parse(s);
+    if(!s) return;
+    const stored = JSON.parse(s);
+    if(stored.rows){
+      for(const k in stored.rows){
+        STATE.rows[k] = Object.assign({}, STATE.rows[k]||{}, stored.rows[k], {__fromReview:false, __overridden:true});
+      }
+    }
+    if(stored.autopays){
+      for(const k in stored.autopays){
+        STATE.autopays[k] = Object.assign({}, STATE.autopays[k]||{}, stored.autopays[k], {__fromReview:false, __overridden:true});
+      }
+    }
+    if(Array.isArray(stored.manual)) STATE.manual = stored.manual;
+    if(stored.collapsed) STATE.collapsed = stored.collapsed;
+    if(stored.apExpanded) STATE.apExpanded = stored.apExpanded;
+    if(stored.keyOpen) STATE.keyOpen = stored.keyOpen;
   } catch(e){}
 }
 function backupState(){
@@ -1215,7 +1241,7 @@ function restoreState(){
 // ============================================================
 //  SHEET DATA
 // ============================================================
-let shAccts = [], shAging = [], shRecur = [], shCleared = [], shHistorical = [];
+let shAccts = [], shAging = [], shRecur = [], shCleared = [], shHistorical = [], shReview = [];
 // shCleared: [{ date: Date, desc: string, amount: number, account: string }]
 // shHistorical: same shape — consolidated 6-month transaction history from "Historical Transactions" tab
 
@@ -1315,7 +1341,7 @@ function parseRecur(rows){
       vendor:     trim(c[0]),
       entity:     trim(c[1]),
       expAmt:     amt(c[2]),
-      nextDue:    trim(c[3]),
+      nextDue:    trim(c[12]) || trim(c[3]),  /* Prefer Computed Due (M), fall back to manual next Due Date (D) */
       payFrom:    trim(c[4]),
       billDay:    trim(c[5]),
       isAutopay:  String(c[6]??'').trim().toLowerCase()==='true',
@@ -1327,6 +1353,224 @@ function parseRecur(rows){
     });
   }
   return out;
+}
+
+// Parses "Review" tab — Juanita's working decision document, used as source of truth for status decisions.
+// Expected columns: A=Vendor/Source, B=Type, C=Due, D=Open Bal, E=Pay From, F=Pay To, G=Pay On,
+//                   H=Pay Amount, I=Status, J=Out, K=In, L=Last Cleared On, M=Last Cleared Amt,
+//                   N=Last Cleared From, O=Notes, P=Entity.
+function parseReview(rows){
+  const out=[];
+  let section='';
+  for(let i=0;i<rows.length;i++){
+    const c=rows[i];
+    if(!c) continue;
+    const a = trim(c[0]);
+    if(a==='MANUAL ENTRIES'){ section='manual'; continue; }
+    if(a==='AUTOPAYS & OTHER RECURRING'){ section='items'; continue; }
+    if(a==='Vendor / Source' || a==='Vendor / Source ') continue;
+    if(!a) continue;
+    const type = trim(c[1]);
+    const status = trim(c[8]);
+    let invRef='', isAutopay=false, isManual=false;
+    const billMatch = type.match(/^(MMI|MME)\s+Bill\s+(.+)$/i);
+    const apMatch   = type.match(/^(MMI|MME)\s+Autopay/i);
+    if(billMatch){ invRef = trim(billMatch[2]); }
+    else if(apMatch){ isAutopay = true; }
+    else if(/^Transfer/i.test(type) || /^Payment Out/i.test(type)){ isManual = true; }
+    out.push({
+      section: section,
+      vendor: a, type: type,
+      due: trim(c[2]), openBal: amt(c[3]),
+      payFrom: trim(c[4]), payTo: trim(c[5]),
+      payOn: trim(c[6]), payAmt: amt(c[7]),
+      status: status, notes: trim(c[14]),
+      entity: (trim(c[15])||'').toLowerCase(),
+      invRef: invRef, isAutopay: isAutopay, isManual: isManual
+    });
+  }
+  return out;
+}
+
+function buildReviewLookup(items){
+  const byKey = {};
+  const byVendorEntity = {};
+  const manualEntries = [];
+  for(const it of items){
+    if(it.isManual){ manualEntries.push(it); continue; }
+    if(it.isAutopay){
+      const k = (it.vendor + '||' + it.entity).replace(/\s+/g,'_').toLowerCase();
+      (byVendorEntity[k] = byVendorEntity[k] || []).push(it);
+      continue;
+    }
+    if(it.invRef){
+      const k = (it.vendor + '||' + it.invRef + '||' + it.entity).replace(/\s+/g,'_').toLowerCase();
+      byKey[k] = it;
+    }
+  }
+  return {byKey, byVendorEntity, manualEntries};
+}
+
+function reviewStatusToRowState(status){
+  switch((status||'').toLowerCase()){
+    case 'cleared':  return {ok:false, bill:'paid'};
+    case 'pending':  return {ok:false, bill:'pend'};
+    case 'pay':      return {ok:true,  bill:'sched'};
+    case 'hold':     return {ok:false, bill:'hold'};
+    case 'skip':     return {ok:false, bill:'skip'};
+    case 'inactive': return {ok:false, bill:'skip'};
+    default:         return null;
+  }
+}
+
+function reviewStatusToAutopayStatus(status){
+  switch((status||'').toLowerCase()){
+    case 'cleared':  return 'paid';
+    case 'pending':  return 'paid';
+    case 'pay':      return 'active';
+    case 'hold':     return 'skip';
+    case 'skip':     return 'skip';
+    case 'inactive': return 'skip';
+    default:         return null;
+  }
+}
+
+function applyReviewBaseline(){
+  if(!shReview || !shReview.length) return;
+  const lookup = buildReviewLookup(shReview);
+  for(const k in lookup.byKey){
+    const it = lookup.byKey[k];
+    const map = reviewStatusToRowState(it.status);
+    if(!map) continue;
+    STATE.rows[k] = {
+      ok: map.ok, bill: map.bill,
+      payAmt: it.payAmt || it.openBal || 0,
+      payOn: it.payOn || '',
+      acct: it.payFrom || '',
+      note: it.notes || '',
+      billEntry: {vendor: it.vendor, invRef: it.invRef, amount: it.openBal || 0, status: map.bill},
+      __fromReview: true
+    };
+  }
+  for(const k in lookup.byVendorEntity){
+    const its = lookup.byVendorEntity[k];
+    for(const it of its){
+      const apStatus = reviewStatusToAutopayStatus(it.status);
+      if(!apStatus) continue;
+      const ent = it.entity.toUpperCase();
+      const rec = (shRecur||[]).find(r => r.vendor === it.vendor && r.entity === ent);
+      if(!rec) continue;
+      const apKey = (rec.vendor + '||' + (rec.invRef || rec.billDay) + '||' + rec.entity).replace(/\s+/g,'_').toLowerCase();
+      STATE.autopays[apKey] = {status: apStatus, newDate:'', __fromReview:true};
+    }
+  }
+}
+
+function resetToReviewBaseline(){
+  if(!confirm('Reset all local overrides? This clears Pay/Hold tweaks made in this browser and restores the view to whatever is on the Review tab right now.')) return;
+  try { localStorage.removeItem(STORE_KEY); } catch(e){}
+  STATE = {rows:{}, manual:[], collapsed:{}, autopays:{}, apExpanded:{}};
+  applyReviewBaseline();
+  renderAll();
+  const c = $('savedChip'); if(c){ c.style.display=''; c.textContent='\u21BA Reset to Review tab'; }
+}
+
+function computeReviewDiff(){
+  const diff = [];
+  const baseline = {rows:{}, autopays:{}};
+  if(shReview && shReview.length){
+    const lookup = buildReviewLookup(shReview);
+    for(const k in lookup.byKey){
+      const it = lookup.byKey[k];
+      const map = reviewStatusToRowState(it.status);
+      if(map) baseline.rows[k] = {ok:map.ok, bill:map.bill, status:it.status};
+    }
+    for(const k in lookup.byVendorEntity){
+      for(const it of lookup.byVendorEntity[k]){
+        const apStatus = reviewStatusToAutopayStatus(it.status);
+        if(!apStatus) continue;
+        const ent = it.entity.toUpperCase();
+        const rec = (shRecur||[]).find(r => r.vendor === it.vendor && r.entity === ent);
+        if(!rec) continue;
+        const apKey = (rec.vendor + '||' + (rec.invRef || rec.billDay) + '||' + rec.entity).replace(/\s+/g,'_').toLowerCase();
+        baseline.autopays[apKey] = {status: apStatus};
+      }
+    }
+  }
+  const allKeys = new Set([...Object.keys(STATE.rows||{}), ...Object.keys(baseline.rows)]);
+  for(const k of allKeys){
+    const cur = (STATE.rows||{})[k];
+    const base = baseline.rows[k];
+    const curStatus = cur ? (cur.bill||'') : '';
+    const baseStatus = base ? (base.bill||'') : '';
+    if(curStatus!==baseStatus){
+      diff.push({key:k, type:'bill', current: curStatus||'(none)', baseline: baseStatus||'(none)'});
+    }
+  }
+  const allApKeys = new Set([...Object.keys(STATE.autopays||{}), ...Object.keys(baseline.autopays)]);
+  for(const k of allApKeys){
+    const cur = (STATE.autopays||{})[k];
+    const base = baseline.autopays[k];
+    const curStatus = cur ? (cur.status||'') : 'active';
+    const baseStatus = base ? (base.status||'') : 'active';
+    if(curStatus!==baseStatus){
+      diff.push({key:k, type:'autopay', current: curStatus, baseline: baseStatus});
+    }
+  }
+  return diff;
+}
+
+function submitReviewEmail(){
+  const diff = computeReviewDiff();
+  const note = (prompt('Add a quick note for Juanita (optional):','') || '').trim();
+  const subject = 'Cash Flow Review Complete' + (diff.length ? (' \u2014 '+diff.length+' change'+(diff.length===1?'':'s')) : ' \u2014 no changes');
+  let body = 'I\'ve reviewed the cash position planner.\n\n';
+  if(note){ body += 'My note: ' + note + '\n\n'; }
+  if(!diff.length){
+    body += 'I reviewed everything Juanita had on the Review tab and didn\'t make any changes.\n\n';
+  } else {
+    body += 'Changes I made (vs. Juanita\'s plan):\n';
+    for(const d of diff){
+      body += '  - ' + d.key + '  [' + d.baseline + ' -> ' + d.current + ']\n';
+    }
+    body += '\nTo see exactly what I see, click the link below. It will open the planner with my overrides applied.\n\n';
+    const overrides = {rows:{}, autopays:{}};
+    for(const k in STATE.rows){
+      const r = STATE.rows[k];
+      if(r.__overridden) overrides.rows[k] = {ok:r.ok, bill:r.bill, payAmt:r.payAmt, payOn:r.payOn};
+    }
+    for(const k in STATE.autopays){
+      const a = STATE.autopays[k];
+      if(a.__overridden) overrides.autopays[k] = {status:a.status, newDate:a.newDate||''};
+    }
+    let frag = '';
+    try { frag = btoa(unescape(encodeURIComponent(JSON.stringify(overrides)))); } catch(e){}
+    const restoreUrl = 'https://sites.google.com/malemogulinitiative.org/mmi-cash-flow-planner/cash-flow-planner#state=' + frag;
+    body += restoreUrl + '\n\n';
+  }
+  body += 'Thanks,\nWalter';
+  const url = 'mailto:admin@malemogulinitiative.org?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+  window.location.href = url;
+}
+
+function loadStateFromFragment(){
+  try {
+    const m = (location.hash||'').match(/state=([^&]+)/);
+    if(!m) return false;
+    const json = decodeURIComponent(escape(atob(m[1])));
+    const overrides = JSON.parse(json);
+    if(overrides.rows){
+      for(const k in overrides.rows){
+        STATE.rows[k] = Object.assign({}, STATE.rows[k]||{}, overrides.rows[k], {__overridden:true, __fromFragment:true});
+      }
+    }
+    if(overrides.autopays){
+      for(const k in overrides.autopays){
+        STATE.autopays[k] = Object.assign({}, STATE.autopays[k]||{}, overrides.autopays[k], {__overridden:true, __fromFragment:true});
+      }
+    }
+    return true;
+  } catch(e){ return false; }
 }
 
 // Parses "Cleared Transactions" tab
@@ -1563,22 +1807,22 @@ async function loadData(){
   hideErr();
   var tabErrors = [];
   try {
-    setOverlay(true,'Loading Account Balances, AP Aging, Recurring Payables, Cleared Transactions, Historical Transactions…');
+    setOverlay(true,'Loading Account Balances, AP Aging, Recurring Payables, Review, Cleared Transactions, Historical Transactions…');
     var p1 = fetchTab('Account Balances').catch(function(e){ tabErrors.push(e.message); return null; });
     var p2 = fetchTab('AP Aging').catch(function(e){ tabErrors.push(e.message); return null; });
     var p3 = fetchTab('Recurring Payables').catch(function(e){ tabErrors.push(e.message); return null; });
-    // Cleared Transactions tab is optional — silently skip if not yet created
     var p4 = fetchTab('Cleared Transactions').catch(function(){ return null; });
-    // Historical Transactions tab is optional — 6-month consolidated history; silently skip if not present
     var p5 = fetchTab('Historical Transactions').catch(function(){ return null; });
-    var results = await Promise.all([p1, p2, p3, p4, p5]);
-    var aD = results[0], gD = results[1], rD = results[2], cD = results[3], hD = results[4];
+    var p6 = fetchTab('Review').catch(function(){ return null; });
+    var results = await Promise.all([p1, p2, p3, p4, p5, p6]);
+    var aD = results[0], gD = results[1], rD = results[2], cD = results[3], hD = results[4], vD = results[5];
 
     if(aD) shAccts      = parseAccts(gvizRows(aD));
     if(gD) shAging      = parseAging(gvizRows(gD));
     if(rD) shRecur      = parseRecur(gvizRows(rD));
     if(cD) shCleared    = parseCleared(gvizRows(cD));    else shCleared    = [];
     if(hD) shHistorical = parseHistorical(gvizRows(hD)); else shHistorical = [];
+    if(vD) shReview     = parseReview(gvizRows(vD));     else shReview     = [];
 
     var now = new Date();
     $('hdrSub').textContent = now.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
@@ -1596,7 +1840,10 @@ async function loadData(){
       hideErr();
     }
 
-    loadState();
+    STATE = {rows:{}, manual:[], collapsed:{}, autopays:{}, apExpanded:{}};
+    applyReviewBaseline();
+    var fragmentLoaded = loadStateFromFragment();
+    if(!fragmentLoaded) loadState();
     renderAll();
     setOverlay(false);
   } catch(err){
@@ -2830,6 +3077,8 @@ function renderQueue(){
 function updRow(key,field,val){
   if(!STATE.rows[key]) STATE.rows[key]={};
   STATE.rows[key][field]=val;
+  STATE.rows[key].__overridden = true;
+  STATE.rows[key].__fromReview = false;
 }
 function updManual(id,field,val){
   const i=(STATE.manual||[]).findIndex(r=>r.id===id);
@@ -4177,6 +4426,8 @@ function updAutopay(key, field, val){
   if(!STATE.autopays) STATE.autopays={};
   if(!STATE.autopays[key]) STATE.autopays[key]={ status:'active', newDate:'' };
   STATE.autopays[key][field]=val;
+  STATE.autopays[key].__overridden = true;
+  STATE.autopays[key].__fromReview = false;
 }
 
 function autopayRowHTML(r){

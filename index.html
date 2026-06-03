@@ -4005,16 +4005,34 @@ async function emailQueue(){
     report.ccAccounts.some(c => c.ap.length);
   if(!hasAny){ alert('Nothing to report yet — no active autopays or approved items this week.'); return; }
 
-  const textBody = reportAsText(report);
-  const htmlBody = reportAsInlineHTML(report);
   const subj = 'MMI Cash Position Review — '+report.weekRange;
-  // Default recipient is Walter — Juanita sends from the finance or admin
-  // inbox after pasting the body and adding a personal note. The button
-  // opens a Gmail compose draft (never auto-sends).
   const to   = 'walterm@malemogulinitiative.org';
-  const gmailUrl = 'https://mail.google.com/mail/?view=cm&fs=1'+
-    '&to='+encodeURIComponent(to)+
-    '&su='+encodeURIComponent(subj);
+  const siteUrl = 'https://sites.google.com/malemogulinitiative.org/mmi-cash-flow-planner/cash-flow-planner';
+
+  // Walter instructions prepended to the report so he knows what to do with it.
+  const walterIntroText =
+    'Hi Walter,\n\n'+
+    'This is the weekly cash position review. The full report is below and the live view (with the same numbers) is at:\n'+
+    siteUrl+'\n\n'+
+    'When you open the live view:\n'+
+    '  - You can toggle the Pay/Hold checkboxes on any row to explore "what if" scenarios. Your changes stay in your browser only — they don\'t change anything on my side.\n'+
+    '  - If you want to send me feedback or note what you would change, click the **✉ Submit** button in the toolbar. That opens a pre-filled email back to me with a summary of any changes you made.\n'+
+    '  - If you want to go back to my plan after experimenting, click **↺ Reset** in the toolbar.\n\n'+
+    '----------------------------------------\n\n';
+  const walterIntroHTML =
+    '<p>Hi Walter,</p>'+
+    '<p>This is the weekly cash position review. The full report is below and the live view (with the same numbers) is at:<br>'+
+    '<a href="'+siteUrl+'">'+siteUrl+'</a></p>'+
+    '<p>When you open the live view:</p>'+
+    '<ul>'+
+      '<li>You can toggle the Pay/Hold checkboxes on any row to explore "what if" scenarios. Your changes stay in your browser only — they don\'t change anything on my side.</li>'+
+      '<li>If you want to send me feedback or note what you would change, click the <strong>✉ Submit</strong> button in the toolbar. That opens a pre-filled email back to me with a summary of any changes you made.</li>'+
+      '<li>If you want to go back to my plan after experimenting, click <strong>↺ Reset</strong> in the toolbar.</li>'+
+    '</ul>'+
+    '<hr>';
+
+  const textBody = walterIntroText + reportAsText(report);
+  const htmlBody = walterIntroHTML + reportAsInlineHTML(report);
 
   // 1. Write to clipboard FIRST while the planner page has focus.
   let clipboardOK = false;
@@ -4026,8 +4044,7 @@ async function emailQueue(){
         'text/plain': new Blob([textBody], {type:'text/plain'}),
       });
       await navigator.clipboard.write([item]);
-      clipboardOK = true;
-      usedRich = true;
+      clipboardOK = true; usedRich = true;
     } else if(navigator.clipboard && navigator.clipboard.writeText){
       await navigator.clipboard.writeText(textBody);
       clipboardOK = true;
@@ -4035,7 +4052,6 @@ async function emailQueue(){
       clipboardOK = legacyClipboardCopy(textBody);
     }
   } catch(e){
-    // Some browsers block rich clipboard writes — retry with plain text only.
     try {
       if(navigator.clipboard && navigator.clipboard.writeText){
         await navigator.clipboard.writeText(textBody);
@@ -4048,44 +4064,42 @@ async function emailQueue(){
     }
   }
 
-  // 2. Open the PDF report tab so Juanita can save it as a PDF and attach
-  //    it to the Gmail draft. Gmail compose URLs don't support attachments
-  //    via parameters, so the PDF needs to be attached manually — opening
-  //    the print tab alongside Gmail makes that a single drag-and-drop step.
-  const pdfHtml = reportAsHTML(report);
-  const pdfWin = window.open('', '_blank');
-  if(pdfWin){
-    pdfWin.document.open();
-    pdfWin.document.write(pdfHtml);
-    pdfWin.document.close();
-    const tryPrint = function(){ try { pdfWin.focus(); pdfWin.print(); } catch(e){} };
-    if(pdfWin.document.readyState === 'complete'){ setTimeout(tryPrint, 200); }
-    else { pdfWin.onload = function(){ setTimeout(tryPrint, 200); }; }
-  }
+  // 2. Open Gmail compose via an anchor click (escapes Google Sites iframe sandbox
+  //    where window.open is often blocked). Only one popup so the browser does not
+  //    suppress it. No PDF print step — that was the source of the "save file" friction.
+  const gmailUrl = 'https://mail.google.com/mail/?view=cm&fs=1'+
+    '&to='+encodeURIComponent(to)+
+    '&su='+encodeURIComponent(subj);
+  let opened = false;
+  try {
+    const a = document.createElement('a');
+    a.href = gmailUrl; a.target = '_blank'; a.rel = 'noopener noreferrer';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    opened = true;
+  } catch(e){ opened = false; }
 
-  // 3. Open Gmail compose with just To + Subject (short URL, no 400).
-  const w = window.open(gmailUrl, '_blank');
-
-  // 4. Tell Juanita the three-step workflow.
-  if(clipboardOK && w && pdfWin){
-    const richMsg = usedRich ? ' (formatted)' : ' (plain text)';
+  // 3. Single, clear instruction alert.
+  if(clipboardOK && opened){
+    const richMsg = usedRich ? '(with formatting)' : '(plain text)';
     alert(
-      'Three things just happened:\n\n'+
-      '1. The report is on your clipboard'+richMsg+'.\n'+
-      '2. A new tab opened with the PDF print dialog — click "Save as PDF" to save it somewhere you can find it.\n'+
-      '3. Gmail compose opened with the recipient and subject filled in.\n\n'+
-      'Next steps:\n'+
-      '• Save the PDF from the print dialog.\n'+
-      '• Switch to the Gmail tab, click in the body, and paste with Ctrl+V (Cmd+V on Mac).\n'+
-      '• Drag the saved PDF onto the Gmail compose window to attach it.'
+      'Gmail just opened in a new tab with the recipient and subject filled in.\n\n'+
+      'The report '+richMsg+' is on your clipboard. Click into the body of the Gmail draft and paste with Ctrl+V (Cmd+V on Mac).\n\n'+
+      'If you want to attach a PDF too, click 🖨 Export PDF separately and drag the saved file onto the Gmail draft.'
     );
-  } else if(clipboardOK && w){
-    alert('PDF tab did not open (pop-up blocked?). The report is on your clipboard — paste it into the Gmail tab with Ctrl+V. To attach a PDF, click ⎙ Print / PDF separately, save it, and drag it onto Gmail.');
   } else if(clipboardOK){
-    alert('Pop-up blocked. The report is on your clipboard. Open a new email to '+to+' with subject "'+subj+'", paste with Ctrl+V, then click ⎙ Print / PDF separately to save a PDF and attach it.');
+    alert(
+      'Could not open Gmail automatically (popup blocked or sandboxed).\n\n'+
+      'The report is on your clipboard. Open a new email to '+to+' with subject "'+subj+'" and paste with Ctrl+V.'
+    );
+  } else if(opened){
+    alert(
+      'Gmail opened, but the report did not copy to the clipboard.\n\n'+
+      'Paste the text body from your browser console (F12) — it has been printed there.'
+    );
+    console.log(textBody);
   } else {
     console.log(textBody);
-    alert('Could not copy to clipboard automatically. The plain-text report was logged to the browser console — open DevTools (F12) and copy it from there.');
+    alert('Could not open Gmail or copy to clipboard automatically. The plain-text report was logged to the browser console — open DevTools (F12) and copy it from there.');
   }
 }
 

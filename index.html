@@ -4024,21 +4024,21 @@ async function emailQueue(){
   // Walter instructions prepended to the report so he knows what to do with it.
   const walterIntroText =
     'Hey Walter!\n\n'+
-    'The cash position review for this week has been published to the Cash Flow Planner site, and is also embedded below for your convenience:\n'+
+    'The cash position review for this week has been published to the Cash Flow Planner site and is also embedded below for your convenience:\n'+
     siteUrl+'\n\n'+
     'When you open the live view:\n'+
     '  - You can toggle the Pay/Hold checkboxes on any row to explore "what if" scenarios. Your changes stay in your browser only, so they don\'t change anything on my side.\n'+
-    '  - If you want to send me feedback or note what you would change, click the ✉ Submit button in the toolbar. That opens a pre-filled email back to me with a summary of any changes you made.\n'+
+    '  - If you want to send me feedback or note what you would change, click the ✉ Submit button in the toolbar to open a pre-filled email back to me with a summary of any changes you made.\n'+
     '  - If you want to go back to my plan after experimenting, click ↺ Reset in the toolbar.\n\n'+
     '----------------------------------------\n\n';
   const walterIntroHTML =
     '<p style="margin:0 0 12px;background:transparent;color:#222;">Hey Walter!</p>'+
-    '<p style="margin:0 0 12px;background:transparent;color:#222;">The cash position review for this week has been published to the <a href="'+siteUrl+'" style="color:#1a73e8;">Cash Flow Planner site</a>, and is also embedded below for your convenience.</p>'+
-    '<p style="margin:0 0 6px;background:transparent;color:#222;">When you open the live view:</p>'+
+    '<p style="margin:0 0 12px;background:transparent;color:#222;">The cash position review for this week has been published to the <a href="'+siteUrl+'" style="color:#1a73e8;">Cash Flow Planner site</a> and is also embedded below for your convenience.</p>'+
+    '<p style="margin:0 0 6px;background:transparent;color:#222;"><strong>When you open the live view:</strong></p>'+
     '<ul style="margin:0 0 12px 24px;padding:0;background:transparent;color:#222;">'+
-      '<li style="background:transparent;margin:0 0 4px;">You can toggle the Pay/Hold checkboxes on any row to explore "what if" scenarios. Your changes stay in your browser only, so they don\'t change anything on my side.</li>'+
-      '<li style="background:transparent;margin:0 0 4px;">If you want to send me feedback or note what you would change, click the <strong>✉ Submit</strong> button in the toolbar. That opens a pre-filled email back to me with a summary of any changes you made.</li>'+
-      '<li style="background:transparent;margin:0;">If you want to go back to my plan after experimenting, click <strong>↺ Reset</strong> in the toolbar.</li>'+
+      '<li style="background:transparent;margin:0 0 4px;">You can toggle the Pay/Hold checkboxes on any row to explore <em>"what if"</em> scenarios. Your changes stay in your browser only, so they don\'t change anything on my side.</li>'+
+      '<li style="background:transparent;margin:0 0 4px;">If you want to send me feedback or note what you would change, click the ✉ <strong>Submit</strong> button in the toolbar to open a pre-filled email back to me with a summary of any changes you made.</li>'+
+      '<li style="background:transparent;margin:0;">If you want to go back to my plan after experimenting, click ↺ <strong>Reset</strong> in the toolbar.</li>'+
     '</ul>'+
     '<hr style="border:none;border-top:1px solid #ddd;margin:14px 0;">';
 

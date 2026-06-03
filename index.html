@@ -1483,12 +1483,21 @@ function applyReviewBaseline(){
 }
 
 function resetToReviewBaseline(){
-  if(!confirm('Reset all local overrides? This clears Pay/Hold tweaks made in this browser and restores the view to whatever is on the Review tab right now.')) return;
+  // Note: confirm() is suppressed by Google Sites iframe sandboxes (returns false silently),
+  // so we just do the reset directly. A visible status banner shows what happened.
   try { localStorage.removeItem(STORE_KEY); } catch(e){}
   STATE = {rows:{}, manual:[], collapsed:{}, autopays:{}, apExpanded:{}};
   applyReviewBaseline();
   renderAll();
-  const c = $('savedChip'); if(c){ c.style.display=''; c.textContent='\u21BA Reset to Review tab'; }
+  const c = $('savedChip');
+  if(c){
+    c.style.display = '';
+    c.style.background = '#dcfce7';
+    c.style.color = '#166534';
+    c.style.fontWeight = '600';
+    c.textContent = '\u21BA Reset \u2014 showing the Review tab plan as it stands right now';
+    setTimeout(function(){ try { c.style.background=''; c.style.color=''; c.style.fontWeight=''; } catch(e){} }, 6000);
+  }
 }
 
 function computeReviewDiff(){

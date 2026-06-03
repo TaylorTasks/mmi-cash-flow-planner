@@ -1033,13 +1033,7 @@ select.autopay-sel.paid    { background: #f0fdf4; border-color: #86efac; color: 
       <div class="hdr-sub" id="hdrSub">Loading…</div>
     </div>
     <div class="hdr-btns">
-      <a class="btn btn-ghost" href="https://docs.google.com/spreadsheets/d/14rbpDerz12gqaT8p8UGufxxNM6hbj96yh-_PN28lDPw/edit" target="_blank" title="Open source data workbook">📊 Source Data</a>
-      <button class="btn btn-ghost" onclick="importBillCSV()" title="Import BILL.com export CSV to auto-fill payment statuses">⬆ Import BILL</button>
-      <button class="btn btn-ghost" onclick="exportCSV()" title="Export approved items as CSV">⬇ Export Queue</button>
-      <button class="btn btn-ghost" onclick="backupState()" title="Download state as JSON">💾 Save State</button>
-      <button class="btn btn-ghost" onclick="restoreState()" title="Restore from JSON file">↩ Restore</button>
       <button class="btn btn-ghost" onclick="exportPDF()" title="Export as PDF">🖨 Export PDF</button>
-      <button class="btn btn-ghost" onclick="showSortDebug()" title="Show the exact dates each row is being sorted by">🔍 Sort Diagnostic</button>
       <button class="btn btn-ghost" onclick="resetToReviewBaseline()" title="Wipe local Pay/Hold tweaks and reload the Review tab as-is">↺ Reset</button>
       <button class="btn btn-ghost" onclick="submitReviewEmail()" title="Email Juanita a summary of your review">✉ Submit</button>
       <button class="btn btn-ghost" onclick="refreshData()">↻ Refresh</button>
@@ -1099,7 +1093,7 @@ select.autopay-sel.paid    { background: #f0fdf4; border-color: #86efac; color: 
       <div class="aq-title">Cash Movement This Week</div>
       <div class="aq-actions">
         <button class="btn btn-ghost" onclick="exportCSV()" title="Download as CSV">↓ CSV</button>
-        <button class="btn btn-ghost" onclick="emailQueue()" title="Send via email">✉ Email</button>
+        
         <button class="btn btn-ghost" onclick="exportPDF()" title="Print or save as PDF">⎙ Print / PDF</button>
       </div>
     </div>
@@ -4038,15 +4032,15 @@ async function emailQueue(){
     '  - If you want to go back to my plan after experimenting, click ↺ Reset in the toolbar.\n\n'+
     '----------------------------------------\n\n';
   const walterIntroHTML =
-    '<p>Hey Walter!</p>'+
-    '<p>The cash position review for this week has been published to the <a href="'+siteUrl+'">Cash Flow Planner site</a>, and is also embedded below for your convenience.</p>'+
-    '<p>When you open the live view:</p>'+
-    '<ul>'+
-      '<li>You can toggle the Pay/Hold checkboxes on any row to explore "what if" scenarios. Your changes stay in your browser only, so they don\'t change anything on my side.</li>'+
-      '<li>If you want to send me feedback or note what you would change, click the <strong>✉ Submit</strong> button in the toolbar. That opens a pre-filled email back to me with a summary of any changes you made.</li>'+
-      '<li>If you want to go back to my plan after experimenting, click <strong>↺ Reset</strong> in the toolbar.</li>'+
+    '<p style="margin:0 0 12px;background:transparent;color:#222;">Hey Walter!</p>'+
+    '<p style="margin:0 0 12px;background:transparent;color:#222;">The cash position review for this week has been published to the <a href="'+siteUrl+'" style="color:#1a73e8;">Cash Flow Planner site</a>, and is also embedded below for your convenience.</p>'+
+    '<p style="margin:0 0 6px;background:transparent;color:#222;">When you open the live view:</p>'+
+    '<ul style="margin:0 0 12px 24px;padding:0;background:transparent;color:#222;">'+
+      '<li style="background:transparent;margin:0 0 4px;">You can toggle the Pay/Hold checkboxes on any row to explore "what if" scenarios. Your changes stay in your browser only, so they don\'t change anything on my side.</li>'+
+      '<li style="background:transparent;margin:0 0 4px;">If you want to send me feedback or note what you would change, click the <strong>✉ Submit</strong> button in the toolbar. That opens a pre-filled email back to me with a summary of any changes you made.</li>'+
+      '<li style="background:transparent;margin:0;">If you want to go back to my plan after experimenting, click <strong>↺ Reset</strong> in the toolbar.</li>'+
     '</ul>'+
-    '<hr>';
+    '<hr style="border:none;border-top:1px solid #ddd;margin:14px 0;">';
 
   const textBody = walterIntroText + reportAsText(report);
   const htmlBody = walterIntroHTML + reportAsInlineHTML(report);
@@ -5293,5 +5287,15 @@ function importBillCSV(){
 // ============================================================
 document.addEventListener('DOMContentLoaded', loadData);
 </script>
+<div id="adminFooter" style="position:sticky;bottom:0;background:#0f172a;border-top:1px solid #1e293b;padding:8px 16px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:11px;color:#94a3b8;z-index:50;">
+  <span style="margin-right:8px;text-transform:uppercase;letter-spacing:0.06em;font-weight:600;color:#cbd5e1;">Admin tools</span>
+  <a class="btn btn-ghost" href="https://docs.google.com/spreadsheets/d/14rbpDerz12gqaT8p8UGufxxNM6hbj96yh-_PN28lDPw/edit" target="_blank" title="Open source data workbook">📊 Source Data</a>
+  <button class="btn btn-ghost" onclick="emailQueue()" title="Email the report to Walter (pre-fills Gmail with the report on your clipboard)">✉ Email Walter</button>
+  <button class="btn btn-ghost" onclick="importBillCSV()" title="Import BILL.com export CSV to auto-fill payment statuses">⬆ Import BILL</button>
+  <button class="btn btn-ghost" onclick="exportCSV()" title="Export approved items as CSV">⬇ Export Queue</button>
+  <button class="btn btn-ghost" onclick="backupState()" title="Download state as JSON">💾 Save State</button>
+  <button class="btn btn-ghost" onclick="restoreState()" title="Restore from JSON file">↩ Restore</button>
+  <button class="btn btn-ghost" onclick="showSortDebug()" title="Show the exact dates each row is being sorted by">🔍 Sort Diagnostic</button>
+</div>
 </body>
 </html>

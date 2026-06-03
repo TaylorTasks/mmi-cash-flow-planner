@@ -1449,13 +1449,22 @@ function applyReviewBaseline(){
     const it = lookup.byKey[k];
     const map = reviewStatusToRowState(it.status);
     if(!map) continue;
+    // Refine bill status for "Cleared": if the payment didn't cover the full open balance,
+    // mark as "partial" so the planner shows "Partially Paid" with the remaining balance,
+    // not "Paid" with $0 outstanding.
+    let billCode = map.bill;
+    const paid = Number(it.payAmt) || 0;
+    const owed = Number(it.openBal) || 0;
+    if(map.bill === 'paid' && paid > 0 && owed > 0 && paid < owed){
+      billCode = 'partial';
+    }
     STATE.rows[k] = {
-      ok: map.ok, bill: map.bill,
-      payAmt: it.payAmt || it.openBal || 0,
+      ok: map.ok, bill: billCode,
+      payAmt: paid || owed || 0,
       payOn: it.payOn || '',
       acct: it.payFrom || '',
       note: it.notes || '',
-      billEntry: {vendor: it.vendor, invRef: it.invRef, amount: it.openBal || 0, status: map.bill},
+      billEntry: {vendor: it.vendor, invRef: it.invRef, amount: owed, status: billCode},
       __fromReview: true
     };
   }
@@ -4036,10 +4045,35 @@ async function emailQueue(){
   const htmlBody = walterIntroHTML + reportAsInlineHTML(report);
 
   // 1. Write to clipboard FIRST while the planner page has focus.
+  //    Primary path: contentEditable + execCommand('copy') — most reliable for Gmail rich paste.
+  //    Secondary path: ClipboardItem (modern API, but Gmail sometimes ignores HTML from it).
+  //    Tertiary path: writeText (plain only).
   let clipboardOK = false;
   let usedRich = false;
+  function copyViaContentEditable(){
+    const div = document.createElement('div');
+    div.contentEditable = 'true';
+    div.innerHTML = htmlBody;
+    div.style.position = 'fixed';
+    div.style.left = '-9999px';
+    div.style.top = '0';
+    div.style.opacity = '0';
+    document.body.appendChild(div);
+    const range = document.createRange();
+    range.selectNodeContents(div);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch(e){ ok = false; }
+    sel.removeAllRanges();
+    document.body.removeChild(div);
+    return ok;
+  }
   try {
-    if(navigator.clipboard && window.ClipboardItem){
+    if(copyViaContentEditable()){
+      clipboardOK = true; usedRich = true;
+    } else if(navigator.clipboard && window.ClipboardItem){
       const item = new ClipboardItem({
         'text/html':  new Blob([htmlBody], {type:'text/html'}),
         'text/plain': new Blob([textBody], {type:'text/plain'}),

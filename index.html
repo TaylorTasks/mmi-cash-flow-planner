@@ -4012,24 +4012,25 @@ async function emailQueue(){
   // Walter instructions prepended to the report so he knows what to do with it.
   const walterIntroText =
     'Hi Walter,\n\n'+
-    'This is the weekly cash position review. The full report is below and the live view (with the same numbers) is at:\n'+
+    'This is the weekly cash position review. The full report is below and the live view (with the same numbers) is published on the Cash Flow Planner site:\n'+
     siteUrl+'\n\n'+
     'When you open the live view:\n'+
-    '  - You can toggle the Pay/Hold checkboxes on any row to explore "what if" scenarios. Your changes stay in your browser only — they don\'t change anything on my side.\n'+
-    '  - If you want to send me feedback or note what you would change, click the **✉ Submit** button in the toolbar. That opens a pre-filled email back to me with a summary of any changes you made.\n'+
-    '  - If you want to go back to my plan after experimenting, click **↺ Reset** in the toolbar.\n\n'+
+    '  - You can toggle the Pay/Hold checkboxes on any row to explore "what if" scenarios. Your changes stay in your browser only, so they don\'t change anything on my side.\n'+
+    '  - If you want to send me feedback or note what you would change, click the ✉ Submit button in the toolbar. That opens a pre-filled email back to me with a summary of any changes you made.\n'+
+    '  - If you want to go back to my plan after experimenting, click ↺ Reset in the toolbar.\n\n'+
     '----------------------------------------\n\n';
   const walterIntroHTML =
+    '<div style="font:13px/1.5 -apple-system,system-ui,Segoe UI,sans-serif;color:#1e293b;">'+
     '<p>Hi Walter,</p>'+
-    '<p>This is the weekly cash position review. The full report is below and the live view (with the same numbers) is at:<br>'+
-    '<a href="'+siteUrl+'">'+siteUrl+'</a></p>'+
+    '<p>This is the weekly cash position review. The full report is below and the live view (with the same numbers) is published on the <a href="'+siteUrl+'">Cash Flow Planner site</a>.</p>'+
     '<p>When you open the live view:</p>'+
     '<ul>'+
-      '<li>You can toggle the Pay/Hold checkboxes on any row to explore "what if" scenarios. Your changes stay in your browser only — they don\'t change anything on my side.</li>'+
+      '<li>You can toggle the Pay/Hold checkboxes on any row to explore "what if" scenarios. Your changes stay in your browser only, so they don\'t change anything on my side.</li>'+
       '<li>If you want to send me feedback or note what you would change, click the <strong>✉ Submit</strong> button in the toolbar. That opens a pre-filled email back to me with a summary of any changes you made.</li>'+
       '<li>If you want to go back to my plan after experimenting, click <strong>↺ Reset</strong> in the toolbar.</li>'+
     '</ul>'+
-    '<hr>';
+    '<hr style="border:none;border-top:1px solid #cbd5e1;margin:16px 0;">'+
+    '</div>';
 
   const textBody = walterIntroText + reportAsText(report);
   const htmlBody = walterIntroHTML + reportAsInlineHTML(report);
